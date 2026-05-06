@@ -1,54 +1,45 @@
-import { View, Text, TextInput, StyleSheet } from 'react-native';
+import React from 'react';
+import { StyleSheet, Text, TextInput, View } from 'react-native';
+import { Tokens, getTheme } from '../../constants/styles';
 import { useTheme } from '../../store/theme-context';
-import { GlobalStyles, getTheme } from '../../constants/styles';
 
-function Input({
-  label,
-  keyboardType,
-  secure,
-  onUpdateValue,
-  value,
-  isInvalid,
-}) {
+function Input({ label, keyboardType, secure, onUpdateValue, value, isInvalid }) {
   const { theme } = useTheme();
-  const currentTheme = getTheme(theme);
+  const t = getTheme(theme);
 
   return (
-    <View style={styles.inputContainer}>
-      <Text style={[styles.label, { color: currentTheme.textPrimary }, isInvalid && styles.labelInvalid]}>
-        {label}
-      </Text>
+    <View style={styles.wrap}>
+      <Text style={[Tokens.font.label, { color: isInvalid ? t.error : t.textTertiary }]}>{label}</Text>
       <TextInput
-        style={[styles.input, { backgroundColor: currentTheme.primaryLight }, isInvalid && styles.inputInvalid]}
         autoCapitalize="none"
         keyboardType={keyboardType}
         secureTextEntry={secure}
         onChangeText={onUpdateValue}
         value={value}
+        placeholderTextColor={t.textTertiary}
+        style={[
+          styles.input,
+          Tokens.font.h3,
+          {
+            backgroundColor: t.surface,
+            color: t.textPrimary,
+            borderColor: isInvalid ? t.error : t.hairline,
+          },
+        ]}
       />
     </View>
   );
 }
 
 export default Input;
- 
+
 const styles = StyleSheet.create({
-  inputContainer: {
-    marginVertical: 8,
-  },
-  label: {
-    marginBottom: 4,
-  },
-  labelInvalid: {
-    color: GlobalStyles.dark.error,
-  },
+  wrap: { marginVertical: 8 },
   input: {
-    paddingVertical: 8,
-    paddingHorizontal: 6,
-    borderRadius: 4,
-    fontSize: 16,
-  },
-  inputInvalid: {
-    backgroundColor: GlobalStyles.dark.error,
+    marginTop: 6,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    borderRadius: Tokens.radius.md,
+    borderWidth: 1,
   },
 });

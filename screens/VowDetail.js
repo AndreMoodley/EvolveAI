@@ -1,234 +1,226 @@
-import React, { useState, useContext, useEffect } from 'react';
-import {
-  View,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  StyleSheet,
-  ScrollView,
-  Alert,
-} from 'react-native';
-import { useTheme } from '../store/theme-context';
-import { getTheme } from '../constants/styles';
-import { getFormattedDate } from '../util/date';
+import React, { useContext, useEffect, useState } from 'react';
+import { Alert, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import moment from 'moment';
+import { Tokens, getTheme } from '../constants/styles';
+import { useTheme } from '../store/theme-context';
 import { CalendarContext } from '../store/calendar-context';
+import { useVoid } from '../store/void-context';
+import GradientCard from '../components/UI/GradientCard';
+import PressableScale from '../components/UI/PressableScale';
+import SectionHeader from '../components/UI/SectionHeader';
+import NeuralHammerCounter from '../components/UI/NeuralHammerCounter';
 
 function VowDetail({ route }) {
   const { theme } = useTheme();
-  const currentTheme = getTheme(theme);
+  const t = getTheme(theme);
   const { vow } = route.params;
-  const {
-    progressions,
-    addProgression,
-    completeProgression,
-    undoCompletion,
-    loadProgressions,
-  } = useContext(CalendarContext);
+  const { progressions, addProgression, completeProgression, undoCompletion, loadProgressions } =
+    useContext(CalendarContext);
+  const voidCtx = useVoid();
   const [newProgression, setNewProgression] = useState('');
 
   useEffect(() => {
     loadProgressions(vow.id);
   }, []);
 
-  const currentProgressions = progressions[vow.id] || [];
-  const completedProgressions = progressions[`${vow.id}_completed`] || [];
+  const current = progressions[vow.id] || [];
+  const completed = progressions[`${vow.id}_completed`] || [];
 
-  const handleAddProgression = async () => {
-    if (newProgression.trim() === '') {
-      return;
-    }
+  const daysLeft = Math.max(0, moment(vow.date).diff(moment(), 'days'));
+  const totalDays = Math.max(1, moment(vow.date).diff(moment(vow.startDate), 'days'));
+  const elapsed = Math.min(totalDays, moment().diff(moment(vow.startDate), 'days'));
+  const ratio = Math.min(1, elapsed / totalDays);
+  const isMajor = vow.type === 'major';
+  const accent = isMajor ? t.accent : t.ki;
 
-    await addProgression(vow.id, { text: newProgression, completed: false });
+  const handleAdd = async () => {
+    if (!newProgression.trim()) return;
+    await addProgression(vow.id, { text: newProgression.trim(), completed: false });
     setNewProgression('');
   };
 
-  const handleCompleteProgression = () => {
-    Alert.alert(
-      "Complete Progression",
-      "Are you sure you want to complete this progression?",
-      [
-        { text: "Cancel", style: "cancel" },
-        { text: "OK", onPress: () => completeProgression(vow.id) }
-      ]
-    );
-  };
-
-  const handleUndoCompletion = () => {
-    Alert.alert(
-      "Undo Completion",
-      "Are you sure you want to undo this progression completion?",
-      [
-        { text: "Cancel", style: "cancel" },
-        { text: "OK", onPress: () => undoCompletion(vow.id) }
-      ]
-    );
-  };
+  const confirm = (msg, onOk) =>
+    Alert.alert('Confirm', msg, [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Yes', onPress: onOk },
+    ]);
 
   return (
-    <ScrollView style={[styles.container, { backgroundColor: currentTheme.background }]}>
-      <View style={styles.vowDetails}>
-        <Text style={[styles.vowTitle, { color: currentTheme.textPrimary }]}>{vow.title}</Text>
-        <Text style={[styles.vowDescription, { color: currentTheme.textPrimary }]}>{vow.description}</Text>
-        <Text style={[styles.vowDate, { color: currentTheme.textSecondary }]}>
-          {getFormattedDate(vow.startDate)} - {getFormattedDate(vow.date)}
+    <ScrollView
+      style={{ backgroundColor: t.background }}
+      contentContainerStyle={styles.container}
+      showsVerticalScrollIndicator={false}
+    >
+      <GradientCard
+        colors={isMajor ? ['#2c0e16', '#0a0408'] : [t.surfaceTop, t.surface]}
+        glow={isMajor}
+        borderColor={accent}
+      >
+        <View style={styles.row}>
+          <View style={[styles.tag, { borderColor: accent }]}>
+            <Ionicons name={isMajor ? 'diamond' : 'leaf-outline'} size={11} color={accent} />
+            <Text style={[Tokens.font.label, { color: accent, marginLeft: 4, fontSize: 9 }]}>
+              {isMajor ? 'Major Vow' : 'Minor Vow'}
+            </Text>
+          </View>
+          <View style={{ flex: 1 }} />
+          <Text style={[Tokens.font.mono, { color: accent }]}>{daysLeft}d left</Text>
+        </View>
+        <Text style={[Tokens.font.title, { color: t.textPrimary, marginTop: 12 }]}>{vow.title}</Text>
+        <Text style={[Tokens.font.body, { color: t.textSecondary, marginTop: 8, lineHeight: 21 }]}>
+          {vow.description}
         </Text>
-        <Text style={[styles.countdown, { color: currentTheme.textPrimary }]}>
-          {moment(vow.date).diff(moment(), 'days') + 1} days left
-        </Text>
-      </View>
-      <View style={styles.progressionContainer}>
-        <TextInput
-          style={[styles.input, { borderColor: currentTheme.primary }]}
-          placeholder="Add Progression"
-          placeholderTextColor={currentTheme.textSecondary}
-          value={newProgression}
-          onChangeText={setNewProgression}
+        <View style={[styles.track, { backgroundColor: 'rgba(0,0,0,0.55)', marginTop: 16 }]}>
+          <View style={[styles.fill, { backgroundColor: accent, width: `${ratio * 100}%` }]} />
+        </View>
+        <View style={styles.row}>
+          <Text style={[Tokens.font.label, { color: t.textTertiary, marginTop: 6 }]}>
+            {moment(vow.startDate).format('MMM D')}
+          </Text>
+          <View style={{ flex: 1 }} />
+          <Text style={[Tokens.font.label, { color: accent, marginTop: 6 }]}>
+            {moment(vow.date).format('MMM D, YYYY')}
+          </Text>
+        </View>
+      </GradientCard>
+
+      <SectionHeader label="Phase VI" title="Neural Hammering" accent={accent} />
+      <GradientCard colors={[t.surfaceTop, t.surface]} borderColor={accent}>
+        <NeuralHammerCounter
+          count={voidCtx.state.hammerCount}
+          todayCount={voidCtx.state.todayHammerCount}
+          dailyTarget={isMajor ? 100 : 50}
+          onStrike={() => voidCtx.strike(1)}
+          onStrikeBatch={(n) => voidCtx.strike(n)}
         />
-        <TouchableOpacity style={[styles.addButton, { backgroundColor: currentTheme.primary }]} onPress={handleAddProgression}>
-          <Text style={[styles.buttonText, { color: currentTheme.textPrimary }]}>Add Progression</Text>
-        </TouchableOpacity>
+      </GradientCard>
+
+      <SectionHeader label="Active" title="Progressions" />
+      <View style={styles.inputRow}>
+        <View style={[styles.field, { backgroundColor: t.surface, borderColor: t.hairline, flex: 1 }]}>
+          <TextInput
+            value={newProgression}
+            onChangeText={setNewProgression}
+            placeholder="Add a progression milestone"
+            placeholderTextColor={t.textTertiary}
+            style={[Tokens.font.body, { color: t.textPrimary }]}
+            onSubmitEditing={handleAdd}
+            returnKeyType="done"
+          />
+        </View>
+        <PressableScale onPress={handleAdd} style={[styles.addBtn, { backgroundColor: accent }]}>
+          <Ionicons name="add" size={20} color={t.background} />
+        </PressableScale>
       </View>
-      <View>
-        <Text style={[styles.heading, { color: currentTheme.textPrimary }]}>Progressions</Text>
-        {currentProgressions.map((progression, index) => (
-          <View
-            key={index}
-            style={[styles.progressionItem, { backgroundColor: currentTheme.primary }]}
-          >
-            <Text style={[styles.progressionText, { color: currentTheme.textPrimary }]}>
-              {progression.text}
-            </Text>
+
+      {current.length === 0 ? (
+        <Text style={[Tokens.font.body, { color: t.textTertiary, marginTop: 12, textAlign: 'center' }]}>
+          No active progressions. Each strike compounds — define the next one.
+        </Text>
+      ) : (
+        current.map((p, i) => (
+          <View key={p.id || i} style={[styles.progressionRow, { backgroundColor: t.surface, borderColor: t.hairline }]}>
+            <View style={[styles.progressionDot, { backgroundColor: accent }]} />
+            <Text style={[Tokens.font.body, { color: t.textPrimary, flex: 1, marginLeft: 10 }]}>{p.text}</Text>
           </View>
-        ))}
-        {currentProgressions.length > 0 && (
-          <TouchableOpacity
-            style={[styles.completeButton, { backgroundColor: currentTheme.primary }]}
-            onPress={handleCompleteProgression}
+        ))
+      )}
+
+      {current.length > 0 && (
+        <PressableScale
+          onPress={() =>
+            confirm('Mark the most recent progression as conquered?', () => completeProgression(vow.id))
+          }
+          style={[styles.actionBtn, { backgroundColor: accent }]}
+        >
+          <Ionicons name="checkmark-circle" size={18} color={t.background} />
+          <Text style={[Tokens.font.h3, { color: t.background, marginLeft: 8 }]}>Conquer Last Progression</Text>
+        </PressableScale>
+      )}
+
+      {completed.length > 0 && (
+        <>
+          <SectionHeader label="Conquered" title={`${completed.length} milestones broken`} />
+          {completed.map((p, i) => (
+            <View
+              key={p.id || i}
+              style={[styles.progressionRow, { backgroundColor: t.surface, borderColor: t.hairline, opacity: 0.7 }]}
+            >
+              <Ionicons name="checkmark-circle" size={16} color={t.jade} />
+              <Text style={[Tokens.font.body, { color: t.textSecondary, flex: 1, marginLeft: 10, textDecorationLine: 'line-through' }]}>
+                {p.text}
+              </Text>
+              {p.completedDate && (
+                <Text style={[Tokens.font.label, { color: t.textTertiary, fontSize: 10 }]}>
+                  {moment(p.completedDate).format('MMM D')}
+                </Text>
+              )}
+            </View>
+          ))}
+          <PressableScale
+            onPress={() =>
+              confirm('Undo the most recent conquest?', () => undoCompletion(vow.id))
+            }
+            style={[styles.actionBtn, { backgroundColor: 'transparent', borderColor: t.hairline, borderWidth: 1 }]}
           >
-            <Text style={[styles.buttonText, { color: currentTheme.textPrimary }]}>Complete Last Progression</Text>
-          </TouchableOpacity>
-        )}
-      </View>
-      <View>
-        <Text style={[styles.heading, { color: currentTheme.textPrimary }]}>Completed Progressions</Text>
-        {completedProgressions.map((progression, index) => (
-          <View
-            key={index}
-            style={[styles.progressionItem, { backgroundColor: currentTheme.primaryLight }]}
-          >
-            <Text style={[styles.progressionText, { color: currentTheme.textSecondary }]}>
-              {progression.text} - Completed - {getFormattedDate(progression.completedDate)}
-            </Text>
-          </View>
-        ))}
-        {completedProgressions.length > 0 && (
-          <TouchableOpacity
-            style={[styles.undoButton, { backgroundColor: currentTheme.primary }]}
-            onPress={handleUndoCompletion}
-          >
-            <Text style={[styles.buttonText, { color: currentTheme.textPrimary }]}>Undo Last Completion</Text>
-          </TouchableOpacity>
-        )}
-      </View>
-      <Text style={[styles.note, { color: currentTheme.textSecondary }]}>
-        Major vows must be set at least 2 months in the future. Minor vows must be set no more than 2 months in the future. Dates cannot be set in the past.
-      </Text>
+            <Ionicons name="arrow-undo" size={16} color={t.textSecondary} />
+            <Text style={[Tokens.font.h3, { color: t.textSecondary, marginLeft: 8 }]}>Undo Last</Text>
+          </PressableScale>
+        </>
+      )}
+
+      <View style={{ height: 60 }} />
     </ScrollView>
   );
 }
 
+export default VowDetail;
+
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    padding: 16,
-  },
-  vowDetails: {
-    marginBottom: 16,
-    padding: 16,
-    borderRadius: 8,
-    backgroundColor: '#333',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  vowTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: 8,
-  },
-  vowDescription: {
-    fontSize: 18,
-    marginBottom: 8,
-  },
-  vowDate: {
-    fontSize: 16,
-    fontStyle: 'italic',
-    marginBottom: 8,
-  },
-  countdown: {
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  progressionContainer: {
+  container: { padding: Tokens.spacing.lg },
+  row: { flexDirection: 'row', alignItems: 'center' },
+  tag: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 16,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: Tokens.radius.pill,
+    borderWidth: 1,
   },
-  input: {
-    flex: 1,
-    borderWidth: 2,
-    padding: 12,
-    borderRadius: 8,
-    fontSize: 16,
-    backgroundColor: '#b22222',
-    color: 'white',
-    marginRight: 8,
+  track: { height: 6, borderRadius: Tokens.radius.pill, overflow: 'hidden' },
+  fill: { height: '100%', borderRadius: Tokens.radius.pill },
+  inputRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  field: {
+    borderRadius: Tokens.radius.md,
+    borderWidth: 1,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
   },
-  addButton: {
-    padding: 12,
-    borderRadius: 8,
-    justifyContent: 'center',
+  addBtn: {
+    width: 48,
+    height: 48,
+    marginLeft: 8,
+    borderRadius: Tokens.radius.md,
     alignItems: 'center',
-  },
-  completeButton: {
-    marginTop: 16,
-    padding: 12,
-    borderRadius: 8,
     justifyContent: 'center',
-    alignItems: 'center',
   },
-  undoButton: {
-    marginTop: 16,
-    padding: 12,
-    borderRadius: 8,
+  progressionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    borderRadius: Tokens.radius.md,
+    borderWidth: 1,
+    marginTop: 8,
+  },
+  progressionDot: { width: 8, height: 8, borderRadius: 4 },
+  actionBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
     justifyContent: 'center',
-    alignItems: 'center',
-  },
-  buttonText: {
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  heading: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginVertical: 8,
-  },
-  progressionItem: {
-    padding: 12,
-    borderRadius: 8,
-    marginVertical: 4,
-  },
-  progressionText: {
-    fontSize: 16,
-  },
-  note: {
-    fontSize: 14,
-    marginTop: 16,
-    textAlign: 'center',
+    paddingVertical: 14,
+    borderRadius: Tokens.radius.pill,
+    marginTop: Tokens.spacing.lg,
   },
 });
-
-export default VowDetail;
