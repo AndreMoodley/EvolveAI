@@ -25,7 +25,6 @@ import Profile from './screens/Profile';
 
 import AuthContextProvider, { AuthContext } from './store/auth-context';
 import CalendarContextProvider from './store/calendar-context';
-import ExpensesContextProvider from './store/expenses-context';
 import { ThemeProvider, useTheme } from './store/theme-context';
 import { VoidProvider } from './store/void-context';
 import { Tokens, getTheme } from './constants/styles';
@@ -249,13 +248,11 @@ export default function App() {
     <ThemeProvider>
       <StatusBar style="light" />
       <AuthContextProvider>
-        <ExpensesContextProvider>
-          <CalendarContextProvider>
-            <VoidProvider>
-              <Root />
-            </VoidProvider>
-          </CalendarContextProvider>
-        </ExpensesContextProvider>
+        <CalendarContextProvider>
+          <VoidProvider>
+            <Root />
+          </VoidProvider>
+        </CalendarContextProvider>
       </AuthContextProvider>
     </ThemeProvider>
   );

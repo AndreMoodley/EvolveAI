@@ -1,0 +1,109 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Practitioner {
+  id            String   @id @default(cuid())
+  email         String   @unique
+  passwordHash  String
+  name          String   @default("Practitioner")
+  ki            Int      @default(100)
+  shadowLevel  Int      @default(1)
+  hammerCount  Int      @default(0)
+  streak        Int      @default(0)
+  lastLogDate   DateTime?
+  anchorCompletedAt DateTime?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  vows         Vow[]
+  sessions     VoidSession[]
+  leaks        KiLeak[]
+  strikes      StrikeEvent[]
+}
+
+model Vow {
+  id            String       @id @default(cuid())
+  practitionerId String
+  practitioner  Practitioner @relation(fields: [practitionerId], references: [id], onDelete: Cascade)
+  title         String
+  description   String
+  type          VowType
+  startDate     DateTime     @default(now())
+  resolutionDate DateTime
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+  progressions  Progression[]
+
+  @@index([practitionerId])
+}
+
+enum VowType {
+  major
+  minor
+}
+
+model Progression {
+  id            String   @id @default(cuid())
+  vowId         String
+  vow           Vow      @relation(fields: [vowId], references: [id], onDelete: Cascade)
+  text          String
+  completed     Boolean  @default(false)
+  completedAt   DateTime?
+  orderIndex    Int      @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([vowId])
+}
+
+model VoidSession {
+  id            String       @id @default(cuid())
+  practitionerId String
+  practitioner  Practitioner @relation(fields: [practitionerId], references: [id], onDelete: Cascade)
+  modality      SessionModality
+  description   String
+  reps          Int          @default(0)
+  rating        Int          @default(7)
+  note          String?
+  occurredOn    DateTime     @default(now())
+  createdAt     DateTime     @default(now())
+
+  @@index([practitionerId, occurredOn])
+}
+
+enum SessionModality {
+  origin
+  pull
+  push
+  core
+  cardio
+  recovery
+}
+
+model KiLeak {
+  id            String       @id @default(cuid())
+  practitionerId String
+  practitioner  Practitioner @relation(fields: [practitionerId], references: [id], onDelete: Cascade)
+  category      String
+  label         String
+  cost          Int          @default(5)
+  occurredAt    DateTime     @default(now())
+
+  @@index([practitionerId, occurredAt])
+}
+
+model StrikeEvent {
+  id            String       @id @default(cuid())
+  practitionerId String
+  practitioner  Practitioner @relation(fields: [practitionerId], references: [id], onDelete: Cascade)
+  amount        Int
+  occurredAt    DateTime     @default(now())
+
+  @@index([practitionerId, occurredAt])
+}

@@ -1,9 +1,11 @@
-import React, { useState } from 'react';
+import React, { useContext, useState } from 'react';
 import { Alert, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Tokens, getTheme } from '../constants/styles';
 import { useTheme } from '../store/theme-context';
 import { useVoid } from '../store/void-context';
+import { AuthContext } from '../store/auth-context';
+import { storeSession } from '../util/http';
 import GradientCard from '../components/UI/GradientCard';
 import PressableScale from '../components/UI/PressableScale';
 import SectionHeader from '../components/UI/SectionHeader';
@@ -21,27 +23,37 @@ function VoidSession({ navigation }) {
   const { theme } = useTheme();
   const t = getTheme(theme);
   const voidCtx = useVoid();
+  const authCtx = useContext(AuthContext);
   const [type, setType] = useState('origin');
   const [description, setDescription] = useState('');
   const [reps, setReps] = useState('');
   const [note, setNote] = useState('');
   const [rating, setRating] = useState(7);
+  const [busy, setBusy] = useState(false);
 
-  const submit = () => {
+  const submit = async () => {
     if (!description.trim()) {
       Alert.alert('Missing Description', 'Name the session.');
       return;
     }
-    voidCtx.logDay({
-      type,
+    if (busy) return;
+    setBusy(true);
+    const repsNum = reps ? parseInt(reps, 10) : 0;
+    const payload = {
+      modality: type,
       description: description.trim(),
-      reps: reps ? parseInt(reps, 10) : 0,
-      note: note.trim(),
+      reps: repsNum,
       rating,
-    });
-    if (reps) {
-      voidCtx.strike(parseInt(reps, 10));
+      note: note.trim() || undefined,
+    };
+    try {
+      if (authCtx?.token) await storeSession(payload, authCtx.token);
+    } catch (e) {
+      console.warn('session sync failed', e?.message);
     }
+    voidCtx.logDay({ ...payload, type });
+    if (repsNum > 0) voidCtx.strike(repsNum);
+    setBusy(false);
     navigation.goBack();
   };
 
