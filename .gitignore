@@ -1,1 +1,6 @@
 node_modules
+.expo/web
+.expo/*.log
+.expo-shared
+*.log
+.DS_Store
