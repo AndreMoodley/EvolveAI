@@ -1,5 +1,6 @@
-import { useContext, useEffect, useState } from 'react';
-import { NavigationContainer } from '@react-navigation/native';
+import React, { useContext, useEffect, useState } from 'react';
+import { Platform, StyleSheet, Text, View } from 'react-native';
+import { NavigationContainer, DefaultTheme } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { StatusBar } from 'expo-status-bar';
@@ -7,40 +8,56 @@ import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as SplashScreen from 'expo-splash-screen';
 
-import ManageExpense from './screens/ManageExpense';
-import RecentExpenses from './screens/RecentExpenses';
-import AllExpenses from './screens/AllExpenses';
-import CustomCalendar from './screens/CustomCalendar';
-import EditExpenseScreen from './screens/EditExpenseScreen';
-import Profile from './screens/Profile';
-import ExpenseDetail from './screens/ExpenseDetail';
-import BindingVow from './screens/BindingVow';
-import BindingVowForm from './screens/BindingVowForm';
-import ProgressionsOverview from './screens/ProgressionsOverview';
-import VowDetail from './screens/VowDetail';
 import LoginScreen from './screens/LoginScreen';
 import SignupScreen from './screens/SignupScreen';
-import IconButton from './components/UI/IconButton';
+import Home from './screens/Home';
+import RealmsOverview from './screens/RealmsOverview';
+import RealmDetail from './screens/RealmDetail';
+import BindingVow from './screens/BindingVow';
+import BindingVowForm from './screens/BindingVowForm';
+import VowDetail from './screens/VowDetail';
+import CustomCalendar from './screens/CustomCalendar';
+import Codex from './screens/Codex';
+import ThreeSecondProtocol from './screens/ThreeSecondProtocol';
+import VoidSession from './screens/VoidSession';
+import TemporalAnchor from './screens/TemporalAnchor';
+import Profile from './screens/Profile';
+
 import AuthContextProvider, { AuthContext } from './store/auth-context';
-import ExpensesContextProvider from './store/expenses-context';
-import { ThemeProvider, useTheme } from './store/theme-context';
 import CalendarContextProvider from './store/calendar-context';
-import { GlobalStyles, getTheme } from './constants/styles';
+import { ThemeProvider, useTheme } from './store/theme-context';
+import { VoidProvider } from './store/void-context';
+import { Tokens, getTheme } from './constants/styles';
 
 const Stack = createNativeStackNavigator();
-const BottomTabs = createBottomTabNavigator();
+const Tabs = createBottomTabNavigator();
 
-SplashScreen.preventAutoHideAsync();
+SplashScreen.preventAutoHideAsync().catch(() => {});
+
+function buildNavTheme(t) {
+  return {
+    ...DefaultTheme,
+    dark: true,
+    colors: {
+      ...DefaultTheme.colors,
+      primary: t.accent,
+      background: t.background,
+      card: t.background,
+      text: t.textPrimary,
+      border: t.hairline,
+      notification: t.primary,
+    },
+  };
+}
 
 function AuthStack() {
   const { theme } = useTheme();
-  const currentTheme = getTheme(theme);
+  const t = getTheme(theme);
   return (
     <Stack.Navigator
       screenOptions={{
-        headerStyle: { backgroundColor: GlobalStyles.dark.primary800 },
-        headerTintColor: 'white',
-        contentStyle: { backgroundColor: GlobalStyles.dark.background },
+        headerShown: false,
+        contentStyle: { backgroundColor: t.background },
       }}
     >
       <Stack.Screen name="Login" component={LoginScreen} />
@@ -49,234 +66,198 @@ function AuthStack() {
   );
 }
 
-function ExpensesOverview() {
-  const { theme } = useTheme();
-  const currentTheme = getTheme(theme);
-  const authCtx = useContext(AuthContext);
+function tabIcon(name) {
+  return ({ color, size, focused }) => (
+    <View style={[styles.tabIconWrap, focused && { transform: [{ translateY: -2 }] }]}>
+      <Ionicons name={name} size={size} color={color} />
+    </View>
+  );
+}
 
+function TabTitle({ label, focused, t }) {
   return (
-    <BottomTabs.Navigator
-      screenOptions={({ navigation }) => ({
-        headerStyle: { backgroundColor: currentTheme.primary },
-        headerTintColor: currentTheme.textPrimary,
-        tabBarStyle: { backgroundColor: currentTheme.primary },
-        tabBarActiveTintColor: currentTheme.accent,
-        headerRight: ({ tintColor }) => (
-          <IconButton
-            icon="add"
-            size={24}
-            color={tintColor}
-            onPress={() => {
-              navigation.navigate('ManageExpense', {
-                expenseId: null,
-                description: '',
-                rating: 0,
-                date: new Date().toISOString(),
-                workouts: [],
-                theme,
-              });
-            }}
-            theme={theme}
-          />
-        ),
-      })}
+    <Text
+      style={{
+        fontSize: 10,
+        fontWeight: '700',
+        letterSpacing: 1.2,
+        textTransform: 'uppercase',
+        color: focused ? t.accent : t.textTertiary,
+      }}
     >
-      <BottomTabs.Screen
-        name="RecentExpenses"
+      {label}
+    </Text>
+  );
+}
+
+function MainTabs() {
+  const { theme } = useTheme();
+  const t = getTheme(theme);
+  return (
+    <Tabs.Navigator
+      screenOptions={{
+        headerShown: false,
+        tabBarActiveTintColor: t.accent,
+        tabBarInactiveTintColor: t.textTertiary,
+        tabBarStyle: {
+          backgroundColor: t.background,
+          borderTopColor: t.hairline,
+          height: Platform.OS === 'ios' ? 88 : 64,
+          paddingBottom: Platform.OS === 'ios' ? 28 : 8,
+          paddingTop: 6,
+        },
+      }}
+    >
+      <Tabs.Screen
+        name="Today"
+        component={Home}
         options={{
-          title: 'Recent Expenses',
-          tabBarLabel: 'Recent',
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="hourglass" size={size} color={color} />
-          ),
+          tabBarIcon: tabIcon('flame-outline'),
+          tabBarLabel: ({ focused }) => <TabTitle label="Today" focused={focused} t={t} />,
         }}
-      >
-        {(props) => <RecentExpenses {...props} theme={theme} />}
-      </BottomTabs.Screen>
-      <BottomTabs.Screen
-        name="Progressions"
+      />
+      <Tabs.Screen
+        name="Realms"
+        component={RealmsOverview}
         options={{
-          title: 'Progressions',
-          tabBarLabel: 'Progressions',
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="infinite-outline" size={size} color={color} />
-          ),
+          tabBarIcon: tabIcon('layers-outline'),
+          tabBarLabel: ({ focused }) => <TabTitle label="Realms" focused={focused} t={t} />,
         }}
-      >
-        {(props) => <ProgressionsOverview {...props} theme={theme} />}
-      </BottomTabs.Screen>
-      <BottomTabs.Screen
-        name="BindingVow"
+      />
+      <Tabs.Screen
+        name="Vows"
+        component={BindingVow}
         options={{
-          title: 'Binding Vow',
-          tabBarLabel: 'Binding Vow',
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="diamond-outline" size={size} color={color} />
-          ),
+          tabBarIcon: tabIcon('diamond-outline'),
+          tabBarLabel: ({ focused }) => <TabTitle label="Vows" focused={focused} t={t} />,
         }}
-      >
-        {(props) => <BindingVow {...props} theme={theme} />}
-      </BottomTabs.Screen>
-      <BottomTabs.Screen
-        name="Calendar"
+      />
+      <Tabs.Screen
+        name="Ledger"
+        component={CustomCalendar}
         options={{
-          title: 'Calendar',
-          tabBarLabel: 'Calendar',
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="calendar" size={size} color={color} />
-          ),
+          tabBarIcon: tabIcon('calendar-outline'),
+          tabBarLabel: ({ focused }) => <TabTitle label="Ledger" focused={focused} t={t} />,
         }}
-      >
-        {(props) => <CustomCalendar {...props} theme={theme} />}
-      </BottomTabs.Screen>
-      <BottomTabs.Screen
-        name="Profile"
+      />
+      <Tabs.Screen
+        name="Codex"
+        component={Codex}
         options={{
-          title: 'Profile',
-          tabBarLabel: 'Profile',
-          headerRight: ({ tintColor }) => (
-            <IconButton
-              icon="exit"
-              color={tintColor}
-              size={24}
-              onPress={authCtx.logout}
-            />
-          ),
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="person" size={size} color={color} />
-          ),
+          tabBarIcon: tabIcon('book-outline'),
+          tabBarLabel: ({ focused }) => <TabTitle label="Codex" focused={focused} t={t} />,
         }}
-      >
-        {(props) => <Profile {...props} theme={theme} />}
-      </BottomTabs.Screen>
-    </BottomTabs.Navigator>
+      />
+      <Tabs.Screen
+        name="Self"
+        component={Profile}
+        options={{
+          tabBarIcon: tabIcon('person-outline'),
+          tabBarLabel: ({ focused }) => <TabTitle label="Self" focused={focused} t={t} />,
+        }}
+      />
+    </Tabs.Navigator>
   );
 }
 
 function AuthenticatedStack() {
+  const { theme } = useTheme();
+  const t = getTheme(theme);
   return (
     <Stack.Navigator
       screenOptions={{
-        headerStyle: { backgroundColor: GlobalStyles.dark.primary800 },
-        headerTintColor: 'white',
-        contentStyle: { backgroundColor: GlobalStyles.dark.primaryLight },
+        headerStyle: { backgroundColor: t.background },
+        headerTintColor: t.textPrimary,
+        headerTitleStyle: { ...Tokens.font.h3, color: t.textPrimary },
+        headerShadowVisible: false,
+        contentStyle: { backgroundColor: t.background },
       }}
     >
+      <Stack.Screen name="Main" component={MainTabs} options={{ headerShown: false }} />
       <Stack.Screen
-        name="ExpensesOverview"
-        options={{ headerShown: false }}
-      >
-        {(props) => <ExpensesOverview {...props} />}
-      </Stack.Screen>
-      <Stack.Screen
-        name="Calendar"
-        options={{
-          presentation: 'modal',
-        }}
-      >
-        {(props) => <CustomCalendar {...props} />}
-      </Stack.Screen>
-      <Stack.Screen
-        name="ManageExpense"
-        options={{
-          presentation: 'modal',
-        }}
-      >
-        {(props) => <ManageExpense {...props} />}
-      </Stack.Screen>
-      <Stack.Screen
-        name="ExpenseDetail"
-        component={ExpenseDetail}
-        options={{ title: 'Expense Details' }}
+        name="TemporalAnchor"
+        component={TemporalAnchor}
+        options={{ presentation: 'fullScreenModal', headerShown: false }}
       />
       <Stack.Screen
-        name="EditExpenseScreen"
-        component={EditExpenseScreen}
-        options={{ title: 'Edit Expense' }}
+        name="ThreeSecondProtocol"
+        component={ThreeSecondProtocol}
+        options={{ presentation: 'modal', title: '3-Second Rule' }}
+      />
+      <Stack.Screen
+        name="VoidSession"
+        component={VoidSession}
+        options={{ presentation: 'modal', title: 'Log Session' }}
       />
       <Stack.Screen
         name="BindingVowForm"
         component={BindingVowForm}
-        options={{ title: 'Add Binding Vow' }}
+        options={{ presentation: 'modal', title: 'Inscribe Vow' }}
       />
-      <Stack.Screen
-        name="VowDetail"
-        component={VowDetail}
-        options={{ title: 'Vow Details' }}
-      />
+      <Stack.Screen name="VowDetail" component={VowDetail} options={{ title: 'Vow' }} />
+      <Stack.Screen name="RealmDetail" component={RealmDetail} options={{ title: 'Realm' }} />
     </Stack.Navigator>
   );
 }
 
 function Navigation() {
+  const { theme } = useTheme();
+  const t = getTheme(theme);
   const authCtx = useContext(AuthContext);
-
   return (
-    <NavigationContainer>
-      {!authCtx.isAuthenticated && <AuthStack />}
-      {authCtx.isAuthenticated && <AuthenticatedStack />}
+    <NavigationContainer theme={buildNavTheme(t)}>
+      {authCtx.isAuthenticated ? <AuthenticatedStack /> : <AuthStack />}
     </NavigationContainer>
   );
 }
+
 function Root() {
   const [isTryingLogin, setIsTryingLogin] = useState(true);
   const authCtx = useContext(AuthContext);
 
   useEffect(() => {
-    async function fetchToken() {
-      const storedToken = await AsyncStorage.getItem('token');
-      const storedUserId = await AsyncStorage.getItem('userId');
-      const storedExpirationDate = await AsyncStorage.getItem('tokenExpiration');
-
-      if (storedToken && storedUserId && storedExpirationDate) {
-        const expirationDate = new Date(storedExpirationDate);
-        const remainingTime = expirationDate.getTime() - new Date().getTime();
-
-        if (remainingTime <= 60000) {
-          // Less than 1 minute, refresh token
-          try {
-            const newToken = await fetchNewToken();
-            authCtx.authenticate(newToken, storedUserId);
-          } catch (error) {
-            console.error('Error refreshing token:', error);
+    (async () => {
+      try {
+        const storedToken = await AsyncStorage.getItem('token');
+        const storedUserId = await AsyncStorage.getItem('userId');
+        const storedExpiration = await AsyncStorage.getItem('tokenExpiration');
+        if (storedToken && storedUserId && storedExpiration) {
+          const remaining = new Date(storedExpiration).getTime() - Date.now();
+          if (remaining > 60000) {
+            authCtx.authenticate(storedToken, storedUserId);
+            setTimeout(authCtx.logout, remaining);
+          } else {
             authCtx.logout();
           }
-        } else {
-          authCtx.authenticate(storedToken, storedUserId);
-          setTimeout(authCtx.logout, remainingTime); // Auto-logout after token expires
         }
-      } else {
+      } catch {
         authCtx.logout();
+      } finally {
+        setIsTryingLogin(false);
+        SplashScreen.hideAsync().catch(() => {});
       }
-
-      setIsTryingLogin(false);
-      SplashScreen.hideAsync(); // Hide the splash screen once the token is fetched
-    }
-
-    fetchToken();
+    })();
   }, []);
 
-  if (isTryingLogin) {
-    return null; // Render nothing while checking the token
-  }
-
+  if (isTryingLogin) return null;
   return <Navigation />;
 }
 
-
 export default function App() {
   return (
-    <>
-      <StatusBar style="dark" />
-      <ThemeProvider>
-        <AuthContextProvider>
-          <ExpensesContextProvider>
-            <CalendarContextProvider>
-              <Root />
-            </CalendarContextProvider>
-          </ExpensesContextProvider>
-        </AuthContextProvider>
-      </ThemeProvider>
-    </>
+    <ThemeProvider>
+      <StatusBar style="light" />
+      <AuthContextProvider>
+        <CalendarContextProvider>
+          <VoidProvider>
+            <Root />
+          </VoidProvider>
+        </CalendarContextProvider>
+      </AuthContextProvider>
+    </ThemeProvider>
   );
 }
+
+const styles = StyleSheet.create({
+  tabIconWrap: { alignItems: 'center', justifyContent: 'center' },
+});

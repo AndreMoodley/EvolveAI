@@ -1,240 +1,271 @@
-import React, { useContext, useState, useEffect, useMemo } from 'react';
-import {
-  SafeAreaView,
-  StyleSheet,
-  View,
-  Text,
-  TouchableOpacity,
-  FlatList,
-} from 'react-native';
+import React, { useContext, useMemo, useState } from 'react';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { CalendarList } from 'react-native-calendars';
-import { useNavigation } from '@react-navigation/native';
-import { CalendarContext } from '../store/calendar-context';
-import { ExpensesContext } from '../store/expenses-context';
-import { getFormattedDate } from '../util/date';
-import { getTheme } from '../constants/styles';
-import { useTheme } from '../store/theme-context';
 import moment from 'moment';
+import { Tokens, getTheme } from '../constants/styles';
+import { useTheme } from '../store/theme-context';
+import { CalendarContext } from '../store/calendar-context';
+import { useVoid } from '../store/void-context';
+import { getFormattedDate } from '../util/date';
+import GradientCard from '../components/UI/GradientCard';
+import PressableScale from '../components/UI/PressableScale';
+import SectionHeader from '../components/UI/SectionHeader';
+import EmptyState from '../components/UI/EmptyState';
 
-function CustomCalendar() {
-  const navigation = useNavigation();
-  const expensesCtx = useContext(ExpensesContext);
-  const calendarCtx = useContext(CalendarContext);
-  const [selectedDate, setSelectedDate] = useState(getFormattedDate(new Date()));
+function CustomCalendar({ navigation }) {
   const { theme } = useTheme();
-  const currentTheme = useMemo(() => getTheme(theme), [theme]);
+  const t = getTheme(theme);
+  const calendarCtx = useContext(CalendarContext);
+  const voidCtx = useVoid();
+  const [selectedDate, setSelectedDate] = useState(getFormattedDate(new Date()));
 
-  // Ensure that the theme updates trigger re-render
-  useEffect(() => {
-    console.log('Theme changed:', theme, currentTheme);
-  }, [theme, currentTheme]);
+  const sessions = voidCtx.state.sessions || [];
+  const leaks = voidCtx.state.leaks || [];
 
-  // Filter expenses based on the selected date until the end of the month
-  const filteredExpenses = expensesCtx.expenses.filter((expense) => {
-    const expenseDate = moment(expense.date);
-    const selectedMoment = moment(selectedDate);
-    return (
-      expenseDate.isSameOrAfter(selectedMoment, 'day') &&
-      expenseDate.isSame(selectedMoment, 'month')
-    );
-  });
-
-  // Filter vows and progressions based on the selected date until the end of the month
-  const filteredVows = calendarCtx.vows.filter((vow) => {
-    const vowDate = moment(vow.date);
-    const selectedMoment = moment(selectedDate);
-    return (
-      vowDate.isSameOrAfter(selectedMoment, 'day') &&
-      vowDate.isSame(selectedMoment, 'month')
-    );
-  });
-
-  const filteredProgressions = Object.values(calendarCtx.progressions)
-    .flat()
-    .filter(progression => progression.completedDate)
-    .filter((progression) => {
-      const progressionDate = moment(progression.completedDate);
-      const selectedMoment = moment(selectedDate);
-      return (
-        progressionDate.isSameOrAfter(selectedMoment, 'day') &&
-        progressionDate.isSame(selectedMoment, 'month')
-      );
+  const markedDates = useMemo(() => {
+    const marks = {};
+    (calendarCtx.vows || []).forEach((v) => {
+      const k = getFormattedDate(v.date);
+      marks[k] = { ...(marks[k] || {}), marked: true, dotColor: t.accent };
     });
-
-  // Combine expenses, vows, and progressions
-  const combinedData = [...filteredExpenses, ...filteredVows, ...filteredProgressions].sort((a, b) => {
-    return new Date(a.date || a.completedDate) - new Date(b.date || b.completedDate);
-  });
-
-  const markedDates = calendarCtx.vows.reduce((acc, vow) => {
-    acc[getFormattedDate(vow.date)] = {
-      marked: true,
-      dotColor: '#ff0000', // Bright red tint for vows
+    sessions.forEach((s) => {
+      const k = s.date;
+      marks[k] = { ...(marks[k] || {}), marked: true, dotColor: t.ki };
+    });
+    leaks.forEach((l) => {
+      const k = (l.at || '').slice(0, 10);
+      if (k) marks[k] = { ...(marks[k] || {}), dotColor: t.error, marked: true };
+    });
+    marks[selectedDate] = {
+      ...(marks[selectedDate] || {}),
+      selected: true,
+      selectedColor: t.primary,
     };
-    return acc;
-  }, {});
+    return marks;
+  }, [calendarCtx.vows, sessions, leaks, selectedDate, t]);
 
-  markedDates[selectedDate] = {
-    selected: true,
-    marked: true,
-    selectedColor: '#ff0000', // Bright red tint
-  };
+  const sessionsForDay = sessions.filter((s) => s.date === selectedDate);
+  const leaksForDay = leaks.filter((l) => (l.at || '').slice(0, 10) === selectedDate);
+  const vowsForDay = (calendarCtx.vows || []).filter(
+    (v) => getFormattedDate(v.date) === selectedDate,
+  );
 
-  function renderItem({ item }) {
-    if (item.rating !== undefined && item.rating !== null) {
-      // Render expense with rating
-      return (
-        <TouchableOpacity
-          style={[styles.item, { backgroundColor: currentTheme.primary }]}
-          onPress={() => navigation.navigate('ExpenseDetail', { expense: item })}
-        >
-          <View>
-            <Text style={[styles.label, { color: currentTheme.textPrimary }]}>Workout</Text>
-            <Text style={[styles.itemText, { color: currentTheme.textPrimary }]}>{item.description}</Text>
-            <Text style={[styles.itemDate, { color: currentTheme.textSecondary }]}>{getFormattedDate(item.date)}</Text>
-          </View>
-          <Text style={[styles.itemAmount, { color: currentTheme.textPrimary }]}>
-            {item.rating.toFixed(1)}/10
-          </Text>
-        </TouchableOpacity>
-      );
-    } else if (item.title) {
-      // Render vow
-      const daysLeft = moment(item.date).diff(moment(), 'days') + 1;
-      const startDate = item.startDate ? getFormattedDate(item.startDate) : 'Unknown';
-      return (
-        <View style={[styles.item, { backgroundColor: currentTheme.primary }]}>
-          <View style={styles.vowDetails}>
-            <Text style={[styles.label, { color: currentTheme.textPrimary }]}>Binding Vow</Text>
-            <Text style={[styles.itemText, { color: currentTheme.textPrimary }]}>{item.title}</Text>
-            <Text style={[styles.itemGoal, { color: currentTheme.textSecondary }]}>{item.goal}</Text>
-            <Text style={[styles.itemDate, { color: currentTheme.textSecondary }]}>{startDate} - {getFormattedDate(item.date)}</Text>
-            <Text style={[styles.countdown, { color: currentTheme.textPrimary }]}>{daysLeft} days left</Text>
-          </View>
-        </View>
-      );
-    } else {
-      // Render progression
-      return (
-        <View style={[styles.item, { backgroundColor: currentTheme.primary }]} >
-          <View style={styles.vowDetails}>
-            <Text style={[styles.label, { color: currentTheme.textPrimary }]}>Progression</Text>
-            <Text style={[styles.itemText, { color: currentTheme.textPrimary }]}>{item.text}</Text>
-            <Text style={[styles.itemDate, { color: currentTheme.textSecondary }]}>{`Completed - ${getFormattedDate(item.completedDate)}`}</Text>
-          </View>
-        </View>
-      );
-    }
-  }
+  const isToday = selectedDate === getFormattedDate(new Date());
+  const onePercent = sessionsForDay.length > 0 || voidCtx.state.todayHammerCount > 0;
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: currentTheme.background }]}>
-      <CalendarList
-        onDayPress={(day) => setSelectedDate(day.dateString)}
-        markedDates={markedDates}
-        theme={{
-          backgroundColor: currentTheme.background,
-          calendarBackground: currentTheme.background,
-          textSectionTitleColor: currentTheme.textTertiary,
-          dayTextColor: currentTheme.textSecondary,
-          todayTextColor: '#ff0000', // Bright red tint
-          selectedDayBackgroundColor: '#ff0000', // Bright red tint
-          selectedDayTextColor: currentTheme.textPrimary,
-          monthTextColor: currentTheme.textPrimary,
-          indicatorColor: currentTheme.textPrimary,
-          textDayFontFamily: 'monospace',
-          textMonthFontFamily: 'monospace',
-          textDayHeaderFontFamily: 'monospace',
-          textDayFontWeight: '300',
-          textMonthFontWeight: 'bold',
-          textDayHeaderFontWeight: '300',
-          textDayFontSize: 16,
-          textMonthFontSize: 16,
-          textDayHeaderFontSize: 16,
-        }}
-        style={styles.calendar}
-        horizontal
-        pagingEnabled
-      />
-      <FlatList
-        data={combinedData}
-        renderItem={renderItem}
-        keyExtractor={(item) => item.id || item.date + item.title || item.completedDate + item.text}
-        ListEmptyComponent={
-          <Text style={[styles.infoText, { color: currentTheme.textPrimary }]}>
-            No ratings, vows, or progressions for the selected date range
-          </Text>
+    <ScrollView
+      style={{ backgroundColor: t.background }}
+      contentContainerStyle={styles.container}
+      showsVerticalScrollIndicator={false}
+    >
+      <View style={styles.header}>
+        <Text style={[Tokens.font.label, { color: t.accent }]}>Phase IV · 1% Daily Rule</Text>
+        <Text style={[Tokens.font.display, { color: t.textPrimary, marginTop: 4 }]}>The Ledger</Text>
+        <Text style={[Tokens.font.body, { color: t.textSecondary, marginTop: 8, lineHeight: 21 }]}>
+          Negative cultivation is regression. The 1% daily rule is binary. Either you advanced today, or you slipped a layer.
+        </Text>
+      </View>
+
+      <View style={[styles.calendarWrap, { backgroundColor: t.surface, borderColor: t.hairline }]}>
+        <CalendarList
+          horizontal
+          pagingEnabled
+          onDayPress={(d) => setSelectedDate(d.dateString)}
+          markedDates={markedDates}
+          calendarHeight={340}
+          theme={{
+            backgroundColor: t.surface,
+            calendarBackground: t.surface,
+            textSectionTitleColor: t.textTertiary,
+            dayTextColor: t.textPrimary,
+            todayTextColor: t.accent,
+            selectedDayBackgroundColor: t.primary,
+            selectedDayTextColor: t.textPrimary,
+            monthTextColor: t.textPrimary,
+            indicatorColor: t.accent,
+            arrowColor: t.accent,
+            textDayFontWeight: '500',
+            textMonthFontWeight: '800',
+            textDayHeaderFontWeight: '700',
+            textDayFontSize: 14,
+            textMonthFontSize: 16,
+            textDayHeaderFontSize: 11,
+          }}
+        />
+      </View>
+
+      <SectionHeader
+        label={isToday ? 'Today' : moment(selectedDate).format('dddd')}
+        title={moment(selectedDate).format('MMMM D, YYYY')}
+        right={
+          isToday && (
+            <View
+              style={[
+                styles.statusPill,
+                { borderColor: onePercent ? t.jade : t.error, backgroundColor: t.surface },
+              ]}
+            >
+              <Ionicons
+                name={onePercent ? 'arrow-up-circle' : 'arrow-down-circle'}
+                size={14}
+                color={onePercent ? t.jade : t.error}
+              />
+              <Text
+                style={[
+                  Tokens.font.label,
+                  { color: onePercent ? t.jade : t.error, marginLeft: 4, fontSize: 10 },
+                ]}
+              >
+                {onePercent ? '+1%' : 'No movement'}
+              </Text>
+            </View>
+          )
         }
-        contentContainerStyle={styles.listContainer}
       />
-    </SafeAreaView>
+
+      {sessionsForDay.length > 0 && (
+        <>
+          <Text style={[Tokens.font.label, { color: t.textTertiary, marginBottom: 8 }]}>VOID SESSIONS</Text>
+          {sessionsForDay.map((s) => (
+            <GradientCard
+              key={s.id}
+              colors={[t.surfaceTop, t.surface]}
+              style={{ marginBottom: 8 }}
+            >
+              <View style={styles.row}>
+                <Ionicons name="flash-outline" size={18} color={t.ki} />
+                <Text style={[Tokens.font.h3, { color: t.textPrimary, marginLeft: 10, flex: 1 }]}>
+                  {s.description || 'Void Session'}
+                </Text>
+                {s.rating != null && (
+                  <View style={[styles.ratingPill, { borderColor: t.accent }]}>
+                    <Text style={[Tokens.font.mono, { color: t.accent }]}>{Number(s.rating).toFixed(1)}</Text>
+                  </View>
+                )}
+              </View>
+              {s.note ? (
+                <Text style={[Tokens.font.body, { color: t.textSecondary, marginTop: 6 }]}>{s.note}</Text>
+              ) : null}
+            </GradientCard>
+          ))}
+        </>
+      )}
+
+      {vowsForDay.length > 0 && (
+        <>
+          <Text style={[Tokens.font.label, { color: t.textTertiary, marginTop: 12, marginBottom: 8 }]}>
+            VOWS RESOLVING
+          </Text>
+          {vowsForDay.map((v) => (
+            <PressableScale
+              key={v.id}
+              onPress={() => navigation.navigate('VowDetail', { vow: v })}
+              style={{ marginBottom: 8 }}
+            >
+              <GradientCard colors={[t.surfaceTop, t.surface]} borderColor={t.accent}>
+                <View style={styles.row}>
+                  <Ionicons name="diamond" size={16} color={t.accent} />
+                  <Text style={[Tokens.font.h3, { color: t.textPrimary, marginLeft: 10, flex: 1 }]}>
+                    {v.title}
+                  </Text>
+                  <Ionicons name="chevron-forward" size={18} color={t.textTertiary} />
+                </View>
+              </GradientCard>
+            </PressableScale>
+          ))}
+        </>
+      )}
+
+      {leaksForDay.length > 0 && (
+        <>
+          <Text style={[Tokens.font.label, { color: t.error, marginTop: 12, marginBottom: 8 }]}>
+            KI LEAKS · {leaksForDay.length}
+          </Text>
+          {leaksForDay.slice(0, 6).map((l) => (
+            <View
+              key={l.id}
+              style={[styles.leakRow, { backgroundColor: t.surface, borderColor: t.hairline }]}
+            >
+              <Ionicons name="alert-circle-outline" size={14} color={t.error} />
+              <Text style={[Tokens.font.body, { color: t.textSecondary, marginLeft: 8, flex: 1 }]}>{l.label}</Text>
+              <Text style={[Tokens.font.label, { color: t.textTertiary, fontSize: 10 }]}>
+                {moment(l.at).format('h:mm a')}
+              </Text>
+            </View>
+          ))}
+        </>
+      )}
+
+      {sessionsForDay.length === 0 && vowsForDay.length === 0 && leaksForDay.length === 0 && (
+        <EmptyState
+          icon="moon-outline"
+          title="Empty Day"
+          body={
+            isToday
+              ? 'Log a void session, strike a vow, or seal a leak. Stagnation is regression.'
+              : 'Nothing inscribed for this day.'
+          }
+        />
+      )}
+
+      {isToday && (
+        <PressableScale
+          onPress={() => navigation.navigate('VoidSession')}
+          style={[styles.fab, { backgroundColor: t.primary, borderColor: t.primaryGlow }]}
+        >
+          <Ionicons name="add" size={22} color={t.textPrimary} />
+          <Text style={[Tokens.font.h3, { color: t.textPrimary, marginLeft: 8 }]}>Log Void Session</Text>
+        </PressableScale>
+      )}
+
+      <View style={{ height: 80 }} />
+    </ScrollView>
   );
 }
 
+export default CustomCalendar;
+
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  calendar: {
-    marginBottom: 10,
-  },
-  listContainer: {
-    paddingHorizontal: 10,
-  },
-  item: {
-    borderRadius: 5,
-    padding: 10,
-    marginVertical: 5,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+  container: { padding: Tokens.spacing.lg, paddingTop: 64 },
+  header: { marginBottom: Tokens.spacing.lg },
+  calendarWrap: {
+    borderRadius: Tokens.radius.lg,
     borderWidth: 1,
-    borderColor: '#ccc',
+    overflow: 'hidden',
   },
-  label: {
-    fontSize: 12,
-    fontWeight: 'bold',
-    marginBottom: 5,
+  row: { flexDirection: 'row', alignItems: 'center' },
+  ratingPill: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: Tokens.radius.pill,
+    borderWidth: 1,
   },
-  itemText: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    marginBottom: 5,
-  },
-  itemGoal: {
-    fontSize: 14,
-    marginBottom: 5,
-  },
-  itemDate: {
-    fontSize: 14,
-    marginBottom: 5,
-  },
-  itemAmount: {
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  countdown: {
-    fontSize: 14,
-    fontWeight: 'bold',
-    marginTop: 5,
-  },
-  vowDetails: {
-    flex: 1,
-  },
-  infoText: {
-    fontSize: 16,
-    textAlign: 'center',
-    marginTop: 20,
-  },
-  amountContainer: {
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-    backgroundColor: 'white',
-    justifyContent: 'center',
+  statusPill: {
+    flexDirection: 'row',
     alignItems: 'center',
-    borderRadius: 4,
-    minWidth: 80,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: Tokens.radius.pill,
+    borderWidth: 1,
+  },
+  leakRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: Tokens.radius.md,
+    borderWidth: 1,
+    marginBottom: 6,
+  },
+  fab: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 16,
+    borderRadius: Tokens.radius.pill,
+    borderWidth: 1.5,
+    marginTop: Tokens.spacing.xl,
   },
 });
-
-export default CustomCalendar;
- 

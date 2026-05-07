@@ -1,92 +1,61 @@
-import { useState } from 'react';
-import { StyleSheet, View } from 'react-native';
-
-import Button from '../UI/Button';
+import React, { useState } from 'react';
+import { StyleSheet, Text, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { Tokens, getTheme } from '../../constants/styles';
+import { useTheme } from '../../store/theme-context';
 import Input from './Input';
+import PressableScale from '../UI/PressableScale';
 
 function AuthForm({ isLogin, onSubmit, credentialsInvalid }) {
-  const [enteredEmail, setEnteredEmail] = useState('');
-  const [enteredConfirmEmail, setEnteredConfirmEmail] = useState('');
-  const [enteredPassword, setEnteredPassword] = useState('');
-  const [enteredConfirmPassword, setEnteredConfirmPassword] = useState('');
- 
-  const {
-    email: emailIsInvalid,
-    confirmEmail: emailsDontMatch,
-    password: passwordIsInvalid,
-    confirmPassword: passwordsDontMatch,
-  } = credentialsInvalid;
+  const { theme } = useTheme();
+  const t = getTheme(theme);
+  const [email, setEmail] = useState('');
+  const [confirmEmail, setConfirmEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
 
-  function updateInputValueHandler(inputType, enteredValue) {
-    switch (inputType) {
-      case 'email':
-        setEnteredEmail(enteredValue);
-        break;
-      case 'confirmEmail':
-        setEnteredConfirmEmail(enteredValue);
-        break;
-      case 'password':
-        setEnteredPassword(enteredValue);
-        break;
-      case 'confirmPassword':
-        setEnteredConfirmPassword(enteredValue);
-        break;
-    }
-  }
-
-  function submitHandler() {
-    onSubmit({
-      email: enteredEmail,
-      confirmEmail: enteredConfirmEmail,
-      password: enteredPassword,
-      confirmPassword: enteredConfirmPassword,
-    });
-  }
+  const submit = () => onSubmit({ email, confirmEmail, password, confirmPassword });
 
   return (
-    <View style={styles.form}>
-      <View>
+    <View>
+      <Input
+        label="Email"
+        keyboardType="email-address"
+        value={email}
+        onUpdateValue={setEmail}
+        isInvalid={credentialsInvalid.email}
+      />
+      {!isLogin && (
         <Input
-          label="Email Address"
-          onUpdateValue={updateInputValueHandler.bind(this, 'email')}
-          value={enteredEmail}
+          label="Confirm Email"
           keyboardType="email-address"
-          isInvalid={emailIsInvalid}
+          value={confirmEmail}
+          onUpdateValue={setConfirmEmail}
+          isInvalid={credentialsInvalid.confirmEmail}
         />
-        {!isLogin && (
-          <Input
-            label="Confirm Email Address"
-            onUpdateValue={updateInputValueHandler.bind(this, 'confirmEmail')}
-            value={enteredConfirmEmail}
-            keyboardType="email-address"
-            isInvalid={emailsDontMatch}
-          />
-        )}
+      )}
+      <Input
+        label="Password"
+        secure
+        value={password}
+        onUpdateValue={setPassword}
+        isInvalid={credentialsInvalid.password}
+      />
+      {!isLogin && (
         <Input
-          label="Password"
-          onUpdateValue={updateInputValueHandler.bind(this, 'password')}
+          label="Confirm Password"
           secure
-          value={enteredPassword}
-          isInvalid={passwordIsInvalid}
+          value={confirmPassword}
+          onUpdateValue={setConfirmPassword}
+          isInvalid={credentialsInvalid.confirmPassword}
         />
-        {!isLogin && (
-          <Input
-            label="Confirm Password"
-            onUpdateValue={updateInputValueHandler.bind(
-              this,
-              'confirmPassword'
-            )}
-            secure
-            value={enteredConfirmPassword}
-            isInvalid={passwordsDontMatch}
-          />
-        )}
-        <View style={styles.buttons}>
-          <Button onPress={submitHandler}>
-            {isLogin ? 'Log In' : 'Sign Up'}
-          </Button>
-        </View>
-      </View>
+      )}
+      <PressableScale onPress={submit} style={[styles.cta, { backgroundColor: t.primary }]}>
+        <Ionicons name={isLogin ? 'flash' : 'flame'} size={18} color={t.textPrimary} />
+        <Text style={[Tokens.font.h3, { color: t.textPrimary, marginLeft: 10 }]}>
+          {isLogin ? 'Enter the Void' : 'Inscribe Practitioner'}
+        </Text>
+      </PressableScale>
     </View>
   );
 }
@@ -94,7 +63,12 @@ function AuthForm({ isLogin, onSubmit, credentialsInvalid }) {
 export default AuthForm;
 
 const styles = StyleSheet.create({
-  buttons: {
-    marginTop: 12,
+  cta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 14,
+    borderRadius: Tokens.radius.pill,
+    marginTop: Tokens.spacing.md,
   },
 });

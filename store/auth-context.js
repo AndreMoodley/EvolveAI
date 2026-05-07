@@ -25,13 +25,12 @@ function AuthContextProvider({ children }) {
         const remainingTime = expirationDate.getTime() - new Date().getTime();
 
         if (remainingTime <= 60000) {
-          // Less than 1 minute left, refresh token
-          fetchNewToken().then(newToken => {
-            authenticate(newToken, storedUserId);
-          }).catch(error => {
-            console.error('Error refreshing token:', error);
-            logout();
-          });
+          fetchNewToken(storedToken)
+            .then((newToken) => authenticate(newToken, storedUserId))
+            .catch((error) => {
+              console.error('Error refreshing token:', error);
+              logout();
+            });
         } else {
           authenticate(storedToken, storedUserId);
           setTimeout(logout, remainingTime); // Auto-logout after token expires
