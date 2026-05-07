@@ -5,3 +5,9 @@ node_modules
 *.log
 .DS_Store
 .dist
+
+# Remotion artifacts
+remotion/out/
+remotion/build/
+remotion/preview/dist/
+server/renders/

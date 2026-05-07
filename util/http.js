@@ -150,3 +150,12 @@ export async function postSeal(amount, token) {
   );
   return data;
 }
+
+export async function renderCinematic(compositionId, inputProps, token) {
+  const { data } = await client.post(
+    '/cinematics',
+    { compositionId, inputProps },
+    { headers: bearer(token), timeout: 120000 },
+  );
+  return { ...data, fullUrl: `${API_URL}${data.url}` };
+}

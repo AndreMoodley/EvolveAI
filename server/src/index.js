@@ -7,6 +7,7 @@ import vowRoutes from './routes/vows.js';
 import progressionRoutes from './routes/progressions.js';
 import sessionRoutes from './routes/sessions.js';
 import practitionerRoutes from './routes/practitioner.js';
+import cinematicsRoutes from './routes/cinematics.js';
 
 const app = express();
 app.use(cors({ origin: process.env.CORS_ORIGIN || '*' }));
@@ -20,6 +21,7 @@ app.use('/vows', vowRoutes);
 app.use('/vows/:vowId/progressions', progressionRoutes);
 app.use('/sessions', sessionRoutes);
 app.use('/practitioner', practitionerRoutes);
+app.use('/cinematics', cinematicsRoutes);
 
 app.use((err, _req, res, _next) => {
   console.error(err);

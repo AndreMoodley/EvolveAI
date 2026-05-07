@@ -13,6 +13,8 @@ import KiBar from '../components/UI/KiBar';
 import RealmBadge from '../components/UI/RealmBadge';
 import SectionHeader from '../components/UI/SectionHeader';
 import SpiritEntity from '../components/Character/SpiritEntity';
+import CinematicShareButton from '../components/Cinematic/CinematicShareButton';
+import { useRealmAscensionWatcher } from '../hooks/useRealmAscensionWatcher';
 
 function Home({ navigation }) {
   const { theme } = useTheme();
@@ -20,6 +22,8 @@ function Home({ navigation }) {
   const voidCtx = useVoid();
   const { state, realm, progress } = voidCtx;
   const { auraKey } = useCharacter();
+
+  useRealmAscensionWatcher();
 
   const pulse = useRef(new Animated.Value(0)).current;
   useEffect(() => {
@@ -167,6 +171,46 @@ function Home({ navigation }) {
           </View>
         </GradientCard>
       </PressableScale>
+
+      <View style={{ marginTop: Tokens.spacing.md, flexDirection: 'row', gap: 8 }}>
+        <View style={{ flex: 1 }}>
+          <CinematicShareButton
+            compositionId="DailyRecap"
+            label="Share Today"
+            icon="share-outline"
+            variant="outline"
+            buildProps={() => ({
+              practitionerName: state.practitionerName ?? 'Practitioner',
+              date: new Date().toISOString().slice(0, 10),
+              realmLevel: realm.level,
+              hammerCount: state.hammerCount,
+              ki: state.ki,
+              shadowLevel: state.shadowLevel,
+              streak: state.streak,
+              todayStrikes: state.todayHammerCount,
+              modalities: ['origin'],
+              vowsAdvanced: 0,
+              kiLeaks: state.leaks?.length ?? 0,
+              auraKey,
+            })}
+            shareMessage={`${state.todayHammerCount} strikes · Realm ${realm.level} · ${state.streak}d streak`}
+          />
+        </View>
+        <View style={{ flex: 1 }}>
+          <CinematicShareButton
+            compositionId="StrikeBurst"
+            label="Burst Today"
+            icon="flash-outline"
+            variant="primary"
+            buildProps={() => ({
+              reps: state.todayHammerCount,
+              modality: 'origin',
+              rating: 9,
+              auraKey,
+            })}
+          />
+        </View>
+      </View>
 
       <SectionHeader label="Phase III" title="Ki Integrity" />
       <GradientCard colors={[t.surfaceTop, t.surface]}>
