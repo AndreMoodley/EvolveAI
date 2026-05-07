@@ -6,6 +6,8 @@ import { Tokens, getTheme } from '../constants/styles';
 import { useTheme } from '../store/theme-context';
 import { useVoid } from '../store/void-context';
 import { AuthContext } from '../store/auth-context';
+import { useCharacter } from '../store/character-context';
+import { AURA_COLORS } from '../components/Character/SpiritEntity';
 import GradientCard from '../components/UI/GradientCard';
 import PressableScale from '../components/UI/PressableScale';
 import SectionHeader from '../components/UI/SectionHeader';
@@ -27,6 +29,7 @@ function Profile({ navigation }) {
   const voidCtx = useVoid();
   const { state, realm } = voidCtx;
   const authCtx = useContext(AuthContext);
+  const { auraKey, setAuraKey } = useCharacter();
   const [editing, setEditing] = useState(false);
   const [name, setName] = useState(state.practitionerName || 'Practitioner');
 
@@ -122,6 +125,34 @@ function Profile({ navigation }) {
         </Text>
       )}
 
+      <SectionHeader label="Entity" title="Aura Colour" />
+      <GradientCard colors={[t.surfaceTop, t.surface]}>
+        <Text style={[Tokens.font.body, { color: t.textTertiary, marginBottom: Tokens.spacing.md }]}>
+          The energy signature your void entity radiates.
+        </Text>
+        <View style={styles.auraRow}>
+          {Object.entries(AURA_COLORS).map(([key, { label, sublabel, color }]) => {
+            const active = auraKey === key;
+            return (
+              <PressableScale key={key} onPress={() => setAuraKey(key)} style={styles.auraOption}>
+                <View style={[
+                  styles.auraSwatch,
+                  { borderColor: active ? color : t.hairline, backgroundColor: active ? `${color}18` : t.surfaceHi },
+                ]}>
+                  <View style={{ width: 20, height: 20, borderRadius: 10, backgroundColor: color, shadowColor: color, shadowOpacity: active ? 0.8 : 0.3, shadowRadius: active ? 8 : 3, elevation: active ? 4 : 1 }} />
+                </View>
+                <Text style={[Tokens.font.label, { color: active ? color : t.textTertiary, marginTop: 6, fontSize: 10 }]}>
+                  {label}
+                </Text>
+                <Text style={[Tokens.font.label, { color: active ? color : t.textTertiary, fontSize: 9, opacity: 0.7 }]}>
+                  {sublabel}
+                </Text>
+              </PressableScale>
+            );
+          })}
+        </View>
+      </GradientCard>
+
       <SectionHeader label="Ascendance" title="Theme" />
       <View style={styles.themeRow}>
         <PressableScale
@@ -194,6 +225,16 @@ const styles = StyleSheet.create({
     borderRadius: Tokens.radius.md,
     borderWidth: 1,
     marginBottom: 6,
+  },
+  auraRow: { flexDirection: 'row', justifyContent: 'space-between' },
+  auraOption: { flex: 1, alignItems: 'center', marginHorizontal: 4 },
+  auraSwatch: {
+    width: '100%',
+    aspectRatio: 1,
+    borderRadius: Tokens.radius.md,
+    borderWidth: 1.5,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   themeRow: { flexDirection: 'row', gap: 10 },
   themeBtn: {

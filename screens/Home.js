@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Tokens, getTheme } from '../constants/styles';
 import { useTheme } from '../store/theme-context';
 import { useVoid } from '../store/void-context';
+import { useCharacter } from '../store/character-context';
 import { realmProgress } from '../constants/realms';
 import { KI_LEAKAGE_CATEGORIES, SHADOW_INTENSITIES } from '../constants/voidProtocol';
 import GradientCard from '../components/UI/GradientCard';
@@ -11,12 +12,14 @@ import PressableScale from '../components/UI/PressableScale';
 import KiBar from '../components/UI/KiBar';
 import RealmBadge from '../components/UI/RealmBadge';
 import SectionHeader from '../components/UI/SectionHeader';
+import SpiritEntity from '../components/Character/SpiritEntity';
 
 function Home({ navigation }) {
   const { theme } = useTheme();
   const t = getTheme(theme);
   const voidCtx = useVoid();
   const { state, realm, progress } = voidCtx;
+  const { auraKey } = useCharacter();
 
   const pulse = useRef(new Animated.Value(0)).current;
   useEffect(() => {
@@ -63,6 +66,36 @@ function Home({ navigation }) {
           </View>
         </View>
       </View>
+
+      {/* Void Entity */}
+      <GradientCard
+        colors={[realm.palette[0], realm.palette[1]]}
+        style={{ marginTop: Tokens.spacing.md }}
+        borderColor={`${t.accent}55`}
+      >
+        <SpiritEntity
+          realmLevel={realm.level}
+          ki={state.ki}
+          shadowLevel={state.shadowLevel}
+          streak={state.streak}
+          auraKey={auraKey}
+        />
+        <View style={styles.entityFooter}>
+          <Text style={[Tokens.font.display, { color: t.accent, opacity: 0.55, fontSize: 28, lineHeight: 30 }]}>
+            {realm.glyph}
+          </Text>
+          <View style={{ flex: 1, marginLeft: Tokens.spacing.md }}>
+            <Text style={[Tokens.font.label, { color: t.textTertiary }]}>
+              Realm {realm.level} · {state.hammerCount.toLocaleString()} strikes
+            </Text>
+            <Text style={[Tokens.font.h3, { color: t.textPrimary, marginTop: 2 }]}>{realm.name}</Text>
+          </View>
+          <View style={[styles.streakPill, { backgroundColor: `${t.accent}18`, borderColor: `${t.accent}55` }]}>
+            <Ionicons name="flame" size={13} color={t.accent} />
+            <Text style={[Tokens.font.mono, { color: t.accent, marginLeft: 5 }]}>{state.streak}d</Text>
+          </View>
+        </View>
+      </GradientCard>
 
       {!anchorDoneToday && (
         <PressableScale onPress={() => navigation.navigate('TemporalAnchor')}>
@@ -248,6 +281,7 @@ const styles = StyleSheet.create({
   container: { padding: Tokens.spacing.lg, paddingTop: 64 },
   header: { marginBottom: Tokens.spacing.md },
   headerRow: { flexDirection: 'row', alignItems: 'center', marginTop: Tokens.spacing.md },
+  entityFooter: { flexDirection: 'row', alignItems: 'center', marginTop: Tokens.spacing.sm },
   anchorRow: { flexDirection: 'row', alignItems: 'center' },
   anchorOrb: { width: 48, height: 48, borderRadius: 24, marginRight: Tokens.spacing.md },
   strikesHeader: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between' },

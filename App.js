@@ -27,6 +27,7 @@ import AuthContextProvider, { AuthContext } from './store/auth-context';
 import CalendarContextProvider from './store/calendar-context';
 import { ThemeProvider, useTheme } from './store/theme-context';
 import { VoidProvider } from './store/void-context';
+import { CharacterProvider } from './store/character-context';
 import { Tokens, getTheme } from './constants/styles';
 
 const Stack = createNativeStackNavigator();
@@ -250,7 +251,9 @@ export default function App() {
       <AuthContextProvider>
         <CalendarContextProvider>
           <VoidProvider>
-            <Root />
+            <CharacterProvider>
+              <Root />
+            </CharacterProvider>
           </VoidProvider>
         </CalendarContextProvider>
       </AuthContextProvider>

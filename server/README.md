@@ -6,7 +6,7 @@ Local-first Node + Express + Prisma + Postgres backend for the EvolveAI mobile a
 
 - **Express 4** — HTTP routing
 - **Prisma 5** — ORM + migrations
-- **Postgres 16** — relational store
+- **Postgres 18** — relational store
 - **JWT (HS256)** — bearer-token auth, 7-day default lifetime
 - **bcryptjs** — password hashing
 - **zod** — request validation
@@ -27,7 +27,7 @@ sudo apt install postgresql-16 && sudo systemctl start postgresql
 # Docker (any host)
 docker run --name evolveai-pg -e POSTGRES_USER=evolveai \
   -e POSTGRES_PASSWORD=evolveai_dev -e POSTGRES_DB=evolveai \
-  -p 5432:5432 -d postgres:16
+  -p 5432:5432 -d postgres:18
 ```
 
 If you installed locally, create the role + database:
