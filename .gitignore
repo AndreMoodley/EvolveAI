@@ -4,3 +4,4 @@ node_modules
 .expo-shared
 *.log
 .DS_Store
+.dist
