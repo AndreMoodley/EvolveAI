@@ -14,8 +14,15 @@ export function requireAuth(req, res, next) {
   }
 }
 
-export function signToken(userId) {
-  return jwt.sign({ sub: userId }, process.env.JWT_SECRET, {
+export function requireAdmin(req, res, next) {
+  if (req.tokenPayload?.role !== 'ADMIN') {
+    return res.status(403).json({ error: 'Admin access required' });
+  }
+  next();
+}
+
+export function signToken(userId, role = 'USER') {
+  return jwt.sign({ sub: userId, role }, process.env.JWT_SECRET, {
     expiresIn: process.env.JWT_EXPIRES_IN || '7d',
   });
 }

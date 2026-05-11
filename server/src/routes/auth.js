@@ -21,8 +21,8 @@ router.post('/signup', async (req, res) => {
   const user = await prisma.practitioner.create({
     data: { email, passwordHash },
   });
-  const token = signToken(user.id);
-  res.status(201).json({ token, userId: user.id, email: user.email, name: user.name });
+  const token = signToken(user.id, user.role);
+  res.status(201).json({ token, userId: user.id, email: user.email, name: user.name, role: user.role });
 });
 
 router.post('/login', async (req, res) => {
@@ -33,13 +33,15 @@ router.post('/login', async (req, res) => {
   if (!user) return res.status(401).json({ error: 'Invalid credentials' });
   const ok = await bcrypt.compare(password, user.passwordHash);
   if (!ok) return res.status(401).json({ error: 'Invalid credentials' });
-  const token = signToken(user.id);
-  res.json({ token, userId: user.id, email: user.email, name: user.name });
+  const token = signToken(user.id, user.role);
+  res.json({ token, userId: user.id, email: user.email, name: user.name, role: user.role });
 });
 
 router.post('/refresh', requireAuth, async (req, res) => {
-  const token = signToken(req.userId);
-  res.json({ token, userId: req.userId });
+  const user = await prisma.practitioner.findUnique({ where: { id: req.userId } });
+  if (!user) return res.status(404).json({ error: 'Not found' });
+  const token = signToken(req.userId, user.role);
+  res.json({ token, userId: req.userId, role: user.role });
 });
 
 router.get('/me', requireAuth, async (req, res) => {

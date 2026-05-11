@@ -657,4 +657,4 @@ The token in `AsyncStorage` may be stale from a previous `JWT_SECRET`. Clear app
 Confirm `ANTHROPIC_API_KEY` is set in `server/.env` and is valid. Check server logs for a `401` from the Anthropic API.
 
 **Realm not updating after strikes**
-Realm is computed client-side from `hammerCount`. If `hammerCount` synced correctly but the realm still shows the wrong tier, check `constants/realms.js` for correct threshold values.
+Realm is computed client-side from `hammerCount`. If `hammerCount` synced correctly but the realm still shows the wrong tier, check `constants/realms.js` for correct threshold values."# remotion" 

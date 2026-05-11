@@ -14,9 +14,9 @@ function LoginScreen() {
   async function loginHandler({ email, password }) {
     setIsAuthenticating(true);
     try {
-      const { token, userId } = await login(email, password);
-      console.log('Logged in successfully:', { token, userId });
-      authCtx.authenticate(token, userId);
+      const { token, userId, role } = await login(email, password);
+      console.log('Logged in successfully:', { token, userId, role });
+      authCtx.authenticate(token, userId, role);
     } catch (error) {
       console.error('Login failed:', error);
       Alert.alert(

@@ -22,6 +22,7 @@ import ThreeSecondProtocol from './screens/ThreeSecondProtocol';
 import VoidSession from './screens/VoidSession';
 import TemporalAnchor from './screens/TemporalAnchor';
 import Profile from './screens/Profile';
+import AdminScreen from './screens/AdminScreen';
 
 import AuthContextProvider, { AuthContext } from './store/auth-context';
 import CalendarContextProvider from './store/calendar-context';
@@ -197,6 +198,7 @@ function AuthenticatedStack() {
       />
       <Stack.Screen name="VowDetail" component={VowDetail} options={{ title: 'Vow' }} />
       <Stack.Screen name="RealmDetail" component={RealmDetail} options={{ title: 'Realm' }} />
+      <Stack.Screen name="Admin" component={AdminScreen} options={{ title: 'Admin Console' }} />
     </Stack.Navigator>
   );
 }

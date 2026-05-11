@@ -8,6 +8,7 @@ import progressionRoutes from './routes/progressions.js';
 import sessionRoutes from './routes/sessions.js';
 import practitionerRoutes from './routes/practitioner.js';
 import cinematicsRoutes from './routes/cinematics.js';
+import adminRoutes from './routes/admin.js';
 
 const app = express();
 app.use(cors({ origin: process.env.CORS_ORIGIN || '*' }));
@@ -22,6 +23,7 @@ app.use('/vows/:vowId/progressions', progressionRoutes);
 app.use('/sessions', sessionRoutes);
 app.use('/practitioner', practitionerRoutes);
 app.use('/cinematics', cinematicsRoutes);
+app.use('/admin', adminRoutes);
 
 app.use((err, _req, res, _next) => {
   console.error(err);

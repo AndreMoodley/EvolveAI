@@ -187,6 +187,20 @@ function Profile({ navigation }) {
         </PressableScale>
       </View>
 
+      {authCtx.isAdmin && (
+        <>
+          <SectionHeader label="System" title="Admin" />
+          <PressableScale
+            onPress={() => navigation.navigate('Admin')}
+            style={[styles.adminBtn, { backgroundColor: t.surfaceHi, borderColor: t.accent }]}
+          >
+            <Ionicons name="shield-checkmark-outline" size={18} color={t.accent} />
+            <Text style={[Tokens.font.h3, { color: t.accent, marginLeft: 8 }]}>Admin Console</Text>
+            <Ionicons name="chevron-forward" size={16} color={t.textTertiary} style={{ marginLeft: 'auto' }} />
+          </PressableScale>
+        </>
+      )}
+
       <SectionHeader label="Danger Zone" title="Reset & Logout" />
       <PressableScale onPress={reset} style={[styles.dangerBtn, { borderColor: t.error }]}>
         <Ionicons name="refresh-circle-outline" size={18} color={t.error} />
@@ -254,5 +268,14 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     borderRadius: Tokens.radius.pill,
     borderWidth: 1,
+  },
+  adminBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 14,
+    paddingHorizontal: Tokens.spacing.lg,
+    borderRadius: Tokens.radius.md,
+    borderWidth: 1,
+    marginBottom: 10,
   },
 });
