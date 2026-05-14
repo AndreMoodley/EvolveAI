@@ -5,7 +5,7 @@ import { Tokens, getTheme } from '../constants/styles';
 import { useTheme } from '../store/theme-context';
 import { useVoid } from '../store/void-context';
 import { AuthContext } from '../store/auth-context';
-import { storeSession } from '../util/http';
+import { apiClient } from '../lib/api/client';
 import GradientCard from '../components/UI/GradientCard';
 import PressableScale from '../components/UI/PressableScale';
 import SectionHeader from '../components/UI/SectionHeader';
@@ -23,7 +23,6 @@ function VoidSession({ navigation }) {
   const { theme } = useTheme();
   const t = getTheme(theme);
   const voidCtx = useVoid();
-  const authCtx = useContext(AuthContext);
   const [type, setType] = useState('origin');
   const [description, setDescription] = useState('');
   const [reps, setReps] = useState('');
@@ -47,10 +46,8 @@ function VoidSession({ navigation }) {
       note: note.trim() || undefined,
     };
     try {
-      if (authCtx?.token) await storeSession(payload, authCtx.token);
-    } catch (e) {
-      console.warn('session sync failed', e?.message);
-    }
+      await apiClient.post('/sessions', payload);
+    } catch {}
     voidCtx.logDay({ ...payload, type });
     if (repsNum > 0) voidCtx.strike(repsNum);
     setBusy(false);

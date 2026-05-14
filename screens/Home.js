@@ -15,6 +15,7 @@ import SectionHeader from '../components/UI/SectionHeader';
 import SpiritEntity from '../components/Character/SpiritEntity';
 import CinematicShareButton from '../components/Cinematic/CinematicShareButton';
 import { useRealmAscensionWatcher } from '../hooks/useRealmAscensionWatcher';
+import { usePremiumStore } from '../features/premium/store/premium.store';
 
 function Home({ navigation }) {
   const { theme } = useTheme();
@@ -22,6 +23,8 @@ function Home({ navigation }) {
   const voidCtx = useVoid();
   const { state, realm, progress } = voidCtx;
   const { auraKey } = useCharacter();
+  const activeBloodlineId = usePremiumStore((s) => s.activeBloodlineId);
+  const isCorrupted = usePremiumStore((s) => s.isCorrupted);
 
   useRealmAscensionWatcher();
 
@@ -83,6 +86,8 @@ function Home({ navigation }) {
           shadowLevel={state.shadowLevel}
           streak={state.streak}
           auraKey={auraKey}
+          bloodlineKey={activeBloodlineId ?? 'origin'}
+          isCorrupted={isCorrupted}
         />
         <View style={styles.entityFooter}>
           <Text style={[Tokens.font.display, { color: t.accent, opacity: 0.55, fontSize: 28, lineHeight: 30 }]}>

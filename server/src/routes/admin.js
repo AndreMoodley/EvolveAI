@@ -2,6 +2,8 @@ import { Router } from 'express';
 import { z } from 'zod';
 import { prisma } from '../prisma.js';
 import { requireAuth, requireAdmin } from '../middleware/auth.js';
+import { settleWeeklyWagers } from '../services/wager.service.js';
+import { logger } from '../lib/logger.js';
 
 const router = Router();
 router.use(requireAuth, requireAdmin);
@@ -109,6 +111,36 @@ router.delete('/practitioners/:id', async (req, res) => {
   }
   await prisma.practitioner.delete({ where: { id: req.params.id } });
   res.status(204).end();
+});
+
+// POST /admin/cron/settle-wagers — trigger weekly wager settlement (call from cron job)
+router.post('/cron/settle-wagers', async (req, res, next) => {
+  try {
+    await settleWeeklyWagers();
+    logger.info('Weekly wager settlement triggered via admin cron');
+    res.json({ settled: true });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// POST /admin/grant-crystals — manual crystal grant for testing / promotions
+router.post('/grant-crystals', async (req, res, next) => {
+  try {
+    const { practitionerId, amount } = req.body;
+    if (!practitionerId || !amount || typeof amount !== 'number') {
+      return res.status(400).json({ error: 'practitionerId and numeric amount required' });
+    }
+    const updated = await prisma.practitioner.update({
+      where: { id: practitionerId },
+      data: { voidCrystalBalance: { increment: amount } },
+      select: { id: true, voidCrystalBalance: true },
+    });
+    logger.info({ practitionerId, amount }, 'Crystals granted via admin');
+    res.json(updated);
+  } catch (err) {
+    next(err);
+  }
 });
 
 export default router;

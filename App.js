@@ -7,6 +7,8 @@ import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as SplashScreen from 'expo-splash-screen';
+import { QueryClientProvider } from '@tanstack/react-query';
+import { queryClient } from './lib/query/client';
 
 import LoginScreen from './screens/LoginScreen';
 import SignupScreen from './screens/SignupScreen';
@@ -23,6 +25,9 @@ import VoidSession from './screens/VoidSession';
 import TemporalAnchor from './screens/TemporalAnchor';
 import Profile from './screens/Profile';
 import AdminScreen from './screens/AdminScreen';
+import Armory from './screens/Armory';
+import SummoningVoid from './screens/SummoningVoid';
+import SoulEscrow from './screens/SoulEscrow';
 
 import AuthContextProvider, { AuthContext } from './store/auth-context';
 import CalendarContextProvider from './store/calendar-context';
@@ -199,6 +204,17 @@ function AuthenticatedStack() {
       <Stack.Screen name="VowDetail" component={VowDetail} options={{ title: 'Vow' }} />
       <Stack.Screen name="RealmDetail" component={RealmDetail} options={{ title: 'Realm' }} />
       <Stack.Screen name="Admin" component={AdminScreen} options={{ title: 'Admin Console' }} />
+      <Stack.Screen name="Armory" component={Armory} options={{ title: 'Armory' }} />
+      <Stack.Screen
+        name="SummoningVoid"
+        component={SummoningVoid}
+        options={{ presentation: 'modal', title: 'Summoning Void' }}
+      />
+      <Stack.Screen
+        name="SoulEscrow"
+        component={SoulEscrow}
+        options={{ presentation: 'modal', title: 'Heavenly Restriction' }}
+      />
     </Stack.Navigator>
   );
 }
@@ -248,18 +264,20 @@ function Root() {
 
 export default function App() {
   return (
-    <ThemeProvider>
-      <StatusBar style="light" />
-      <AuthContextProvider>
-        <CalendarContextProvider>
-          <VoidProvider>
-            <CharacterProvider>
-              <Root />
-            </CharacterProvider>
-          </VoidProvider>
-        </CalendarContextProvider>
-      </AuthContextProvider>
-    </ThemeProvider>
+    <QueryClientProvider client={queryClient}>
+      <ThemeProvider>
+        <StatusBar style="light" />
+        <AuthContextProvider>
+          <CalendarContextProvider>
+            <VoidProvider>
+              <CharacterProvider>
+                <Root />
+              </CharacterProvider>
+            </VoidProvider>
+          </CalendarContextProvider>
+        </AuthContextProvider>
+      </ThemeProvider>
+    </QueryClientProvider>
   );
 }
 

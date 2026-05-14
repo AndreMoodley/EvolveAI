@@ -12,39 +12,63 @@ enum Role {
   ADMIN
 }
 
-model Practitioner {
-  id            String   @id @default(cuid())
-  email         String   @unique
-  passwordHash  String
-  name          String   @default("Practitioner")
-  role          Role     @default(USER)
-  ki            Int      @default(100)
-  shadowLevel  Int      @default(1)
-  hammerCount  Int      @default(0)
-  streak        Int      @default(0)
-  lastLogDate   DateTime?
-  anchorCompletedAt DateTime?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+// ─── Core Models ──────────────────────────────────────────────────────────────
 
+model Practitioner {
+  id                   String    @id @default(cuid())
+  email                String    @unique
+  passwordHash         String
+  name                 String    @default("Practitioner")
+  role                 Role      @default(USER)
+  ki                   Int       @default(100)
+  shadowLevel          Int       @default(1)
+  hammerCount          Int       @default(0)
+  streak               Int       @default(0)
+  lastLogDate          DateTime?
+  anchorCompletedAt    DateTime?
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+
+  // Premium fields
+  voidCrystalBalance   Int       @default(0)
+  lesserScrolls        Int       @default(0)
+  activeBloodlineId    String?
+  activeDomainPackId   String?
+  activeFamiliarId     String?
+  restrictionScar      Boolean   @default(false)
+  hasTranscendentSkin  Boolean   @default(false)
+  corruptedAt          DateTime?
+
+  // Relations — core
   vows         Vow[]
   sessions     VoidSession[]
   leaks        KiLeak[]
   strikes      StrikeEvent[]
+
+  // Relations — premium
+  bloodlines   PractitionerBloodline[]
+  domains      PractitionerDomain[]
+  familiars    PractitionerFamiliar[]
+  summons      FamiliarSummon[]
+  wagers       WagerEvent[]
 }
 
 model Vow {
-  id            String       @id @default(cuid())
-  practitionerId String
-  practitioner  Practitioner @relation(fields: [practitionerId], references: [id], onDelete: Cascade)
-  title         String
-  description   String
-  type          VowType
-  startDate     DateTime     @default(now())
-  resolutionDate DateTime
-  createdAt     DateTime     @default(now())
-  updatedAt     DateTime     @updatedAt
-  progressions  Progression[]
+  id                     String       @id @default(cuid())
+  practitionerId         String
+  practitioner           Practitioner @relation(fields: [practitionerId], references: [id], onDelete: Cascade)
+  title                  String
+  description            String
+  type                   VowType
+  vowSubtype             String       @default("standard") // standard | heavenly_restriction
+  startDate              DateTime     @default(now())
+  resolutionDate         DateTime
+  wagerAmount            Float?
+  wagerStatus            String?      // pending | forfeited | succeeded
+  stripePaymentIntentId  String?
+  createdAt              DateTime     @default(now())
+  updatedAt              DateTime     @updatedAt
+  progressions           Progression[]
 
   @@index([practitionerId])
 }
@@ -55,30 +79,30 @@ enum VowType {
 }
 
 model Progression {
-  id            String   @id @default(cuid())
-  vowId         String
-  vow           Vow      @relation(fields: [vowId], references: [id], onDelete: Cascade)
-  text          String
-  completed     Boolean  @default(false)
-  completedAt   DateTime?
-  orderIndex    Int      @default(0)
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id          String   @id @default(cuid())
+  vowId       String
+  vow         Vow      @relation(fields: [vowId], references: [id], onDelete: Cascade)
+  text        String
+  completed   Boolean  @default(false)
+  completedAt DateTime?
+  orderIndex  Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   @@index([vowId])
 }
 
 model VoidSession {
-  id            String       @id @default(cuid())
+  id             String          @id @default(cuid())
   practitionerId String
-  practitioner  Practitioner @relation(fields: [practitionerId], references: [id], onDelete: Cascade)
-  modality      SessionModality
-  description   String
-  reps          Int          @default(0)
-  rating        Int          @default(7)
-  note          String?
-  occurredOn    DateTime     @default(now())
-  createdAt     DateTime     @default(now())
+  practitioner   Practitioner    @relation(fields: [practitionerId], references: [id], onDelete: Cascade)
+  modality       SessionModality
+  description    String
+  reps           Int             @default(0)
+  rating         Int             @default(7)
+  note           String?
+  occurredOn     DateTime        @default(now())
+  createdAt      DateTime        @default(now())
 
   @@index([practitionerId, occurredOn])
 }
@@ -93,23 +117,130 @@ enum SessionModality {
 }
 
 model KiLeak {
-  id            String       @id @default(cuid())
+  id             String       @id @default(cuid())
   practitionerId String
-  practitioner  Practitioner @relation(fields: [practitionerId], references: [id], onDelete: Cascade)
-  category      String
-  label         String
-  cost          Int          @default(5)
-  occurredAt    DateTime     @default(now())
+  practitioner   Practitioner @relation(fields: [practitionerId], references: [id], onDelete: Cascade)
+  category       String
+  label          String
+  cost           Int          @default(5)
+  occurredAt     DateTime     @default(now())
 
   @@index([practitionerId, occurredAt])
 }
 
 model StrikeEvent {
-  id            String       @id @default(cuid())
+  id             String       @id @default(cuid())
   practitionerId String
-  practitioner  Practitioner @relation(fields: [practitionerId], references: [id], onDelete: Cascade)
-  amount        Int
-  occurredAt    DateTime     @default(now())
+  practitioner   Practitioner @relation(fields: [practitionerId], references: [id], onDelete: Cascade)
+  amount         Int
+  occurredAt     DateTime     @default(now())
 
   @@index([practitionerId, occurredAt])
+}
+
+// ─── Premium Models ───────────────────────────────────────────────────────────
+
+model Bloodline {
+  id          String                  @id @default(cuid())
+  lineageKey  String                  @unique
+  name        String
+  description String                  @default("")
+  stageConfig Json
+  createdAt   DateTime                @default(now())
+  unlockedBy  PractitionerBloodline[]
+}
+
+model PractitionerBloodline {
+  id             String       @id @default(cuid())
+  practitionerId String
+  bloodlineId    String
+  unlockedAt     DateTime     @default(now())
+  practitioner   Practitioner @relation(fields: [practitionerId], references: [id], onDelete: Cascade)
+  bloodline      Bloodline    @relation(fields: [bloodlineId], references: [id])
+
+  @@unique([practitionerId, bloodlineId])
+  @@index([practitionerId])
+}
+
+model DomainPack {
+  id          String               @id @default(cuid())
+  packKey     String               @unique
+  name        String
+  description String               @default("")
+  themeConfig Json
+  audioBundle String?
+  createdAt   DateTime             @default(now())
+  unlockedBy  PractitionerDomain[]
+}
+
+model PractitionerDomain {
+  id             String       @id @default(cuid())
+  practitionerId String
+  domainPackId   String
+  unlockedAt     DateTime     @default(now())
+  isActive       Boolean      @default(false)
+  practitioner   Practitioner @relation(fields: [practitionerId], references: [id], onDelete: Cascade)
+  domainPack     DomainPack   @relation(fields: [domainPackId], references: [id])
+
+  @@unique([practitionerId, domainPackId])
+  @@index([practitionerId])
+}
+
+model Familiar {
+  id          String                 @id @default(cuid())
+  name        String
+  rarity      FamiliarRarity
+  abilityKey  String
+  visualKey   String
+  description String                 @default("")
+  createdAt   DateTime               @default(now())
+  acquiredBy  PractitionerFamiliar[]
+  summons     FamiliarSummon[]
+}
+
+enum FamiliarRarity {
+  wandering
+  bound
+  ancient
+  void_herald
+}
+
+model PractitionerFamiliar {
+  id             String       @id @default(cuid())
+  practitionerId String
+  familiarId     String
+  acquiredAt     DateTime     @default(now())
+  isActive       Boolean      @default(false)
+  practitioner   Practitioner @relation(fields: [practitionerId], references: [id], onDelete: Cascade)
+  familiar       Familiar     @relation(fields: [familiarId], references: [id])
+
+  @@unique([practitionerId, familiarId])
+  @@index([practitionerId])
+}
+
+model FamiliarSummon {
+  id             String       @id @default(cuid())
+  practitionerId String
+  scrollType     String       // lesser | abyssal
+  pullIndex      Int
+  familiarId     String
+  timestamp      DateTime     @default(now())
+  practitioner   Practitioner @relation(fields: [practitionerId], references: [id], onDelete: Cascade)
+  familiar       Familiar     @relation(fields: [familiarId], references: [id])
+
+  @@index([practitionerId, timestamp])
+}
+
+model WagerEvent {
+  id             String       @id @default(cuid())
+  practitionerId String
+  crystalAmount  Int
+  weekStart      DateTime
+  weekTarget     Json
+  outcome        String?      // won | lost | pending (null = active)
+  settledAt      DateTime?
+  createdAt      DateTime     @default(now())
+  practitioner   Practitioner @relation(fields: [practitionerId], references: [id], onDelete: Cascade)
+
+  @@index([practitionerId, weekStart])
 }

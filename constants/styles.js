@@ -98,7 +98,29 @@ export const GlobalStyles = {
   light: lightTheme,
 };
 
-export const getTheme = (theme) => {
-  if (theme === 'light' || theme === 'ascendant') return lightTheme;
-  return voidTheme;
+export const getTheme = (theme, domainKey) => {
+  const base = theme === 'light' || theme === 'ascendant' ? lightTheme : voidTheme;
+  if (!domainKey || domainKey === 'void_default') return base;
+
+  try {
+    const { getDomainConfig } = require('./domains');
+    const domain = getDomainConfig(domainKey);
+    if (!domain?.tokens) return base;
+    const t = domain.tokens;
+    return {
+      ...base,
+      background: t.background ?? base.background,
+      surface: t.surface ?? base.surface,
+      surfaceHi: t.surfaceElevated ?? base.surfaceHi,
+      hairline: t.border ?? base.hairline,
+      primaryGlow: t.accentBright ?? base.primaryGlow,
+      ki: t.kiBarFill ?? base.ki,
+      textPrimary: t.text ?? base.textPrimary,
+      textSecondary: t.textMuted ?? base.textSecondary,
+      shadowColor: t.shadow ?? base.shadowColor,
+      _domainKey: domainKey,
+    };
+  } catch {
+    return base;
+  }
 };

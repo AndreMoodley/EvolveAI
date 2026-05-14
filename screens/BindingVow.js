@@ -1,7 +1,7 @@
 import React, { useContext, useMemo } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import moment from 'moment';
+import { differenceInDays } from 'date-fns';
 import { Tokens, getTheme } from '../constants/styles';
 import { useTheme } from '../store/theme-context';
 import { CalendarContext } from '../store/calendar-context';
@@ -12,9 +12,10 @@ import SectionHeader from '../components/UI/SectionHeader';
 import EmptyState from '../components/UI/EmptyState';
 
 function VowCard({ vow, onPress, t, todayCount }) {
-  const daysLeft = Math.max(0, moment(vow.date).diff(moment(), 'days'));
-  const totalDays = Math.max(1, moment(vow.date).diff(moment(vow.startDate), 'days'));
-  const elapsed = Math.min(totalDays, moment().diff(moment(vow.startDate), 'days'));
+  const now = new Date();
+  const daysLeft = Math.max(0, differenceInDays(new Date(vow.date), now));
+  const totalDays = Math.max(1, differenceInDays(new Date(vow.date), new Date(vow.startDate)));
+  const elapsed = Math.min(totalDays, differenceInDays(now, new Date(vow.startDate)));
   const ratio = Math.min(1, elapsed / totalDays);
   const isMajor = vow.type === 'major';
   const accent = isMajor ? t.accent : t.ki;
@@ -98,6 +99,24 @@ function BindingVow({ navigation }) {
               </Text>
             </View>
             <Ionicons name="chevron-forward" size={22} color={t.accent} />
+          </View>
+        </GradientCard>
+      </PressableScale>
+
+      <PressableScale
+        onPress={() => navigation.navigate('SoulEscrow')}
+        style={{ marginTop: 10 }}
+      >
+        <GradientCard colors={['#2a0410', '#0a0408']} borderColor="#5a1020">
+          <View style={styles.row}>
+            <Ionicons name="shield-checkmark-outline" size={28} color="#c91538" />
+            <View style={{ flex: 1, marginLeft: 12 }}>
+              <Text style={[Tokens.font.h3, { color: t.textPrimary }]}>Heavenly Restriction</Text>
+              <Text style={[Tokens.font.body, { color: t.textSecondary, fontSize: 13 }]}>
+                Bind real money to a vow. Break it and lose it.
+              </Text>
+            </View>
+            <Ionicons name="chevron-forward" size={22} color="#c91538" />
           </View>
         </GradientCard>
       </PressableScale>

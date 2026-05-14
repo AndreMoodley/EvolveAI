@@ -1,13 +1,15 @@
 import React, { useContext, useState } from 'react';
 import { Alert, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import moment from 'moment';
+import { formatDistanceToNow } from 'date-fns';
 import { Tokens, getTheme } from '../constants/styles';
 import { useTheme } from '../store/theme-context';
 import { useVoid } from '../store/void-context';
 import { AuthContext } from '../store/auth-context';
 import { useCharacter } from '../store/character-context';
 import { AURA_COLORS } from '../components/Character/SpiritEntity';
+import { usePremiumStore } from '../features/premium/store/premium.store';
+import { usePremiumInventory } from '../features/premium/hooks/usePremium';
 import GradientCard from '../components/UI/GradientCard';
 import PressableScale from '../components/UI/PressableScale';
 import SectionHeader from '../components/UI/SectionHeader';
@@ -32,6 +34,13 @@ function Profile({ navigation }) {
   const { auraKey, setAuraKey } = useCharacter();
   const [editing, setEditing] = useState(false);
   const [name, setName] = useState(state.practitionerName || 'Practitioner');
+
+  usePremiumInventory();
+  const voidCrystals = usePremiumStore((s) => s.voidCrystalBalance);
+  const lesserScrolls = usePremiumStore((s) => s.lesserScrolls);
+  const unlockedFamiliars = usePremiumStore((s) => s.unlockedFamiliars);
+  const activeFamiliarId = usePremiumStore((s) => s.activeFamiliarId);
+  const activeFamiliar = unlockedFamiliars.find((f) => f.id === activeFamiliarId || f.visualKey === activeFamiliarId);
 
   const reset = () =>
     Alert.alert(
@@ -115,7 +124,7 @@ function Profile({ navigation }) {
           <Ionicons name="alert-circle-outline" size={14} color={t.error} />
           <Text style={[Tokens.font.body, { color: t.textSecondary, marginLeft: 8, flex: 1 }]}>{l.label}</Text>
           <Text style={[Tokens.font.label, { color: t.textTertiary, fontSize: 10 }]}>
-            {moment(l.at).fromNow()}
+            {formatDistanceToNow(new Date(l.at ?? l.occurredAt), { addSuffix: true })}
           </Text>
         </View>
       ))}
@@ -200,6 +209,36 @@ function Profile({ navigation }) {
           </PressableScale>
         </>
       )}
+
+      <SectionHeader label="The Void" title="Premium Inventory" />
+      <GradientCard colors={[t.surfaceTop, t.surface]}>
+        <View style={styles.statRow}>
+          <Stat label="Crystals" value={`${voidCrystals} ◆`} t={t} color={t.accent} />
+          <Stat label="Scrolls" value={lesserScrolls} t={t} />
+          <Stat label="Familiars" value={unlockedFamiliars.length} t={t} color={t.ki} />
+        </View>
+        {activeFamiliar && (
+          <Text style={[Tokens.font.body, { color: t.textTertiary, marginTop: Tokens.spacing.md }]}>
+            Active Familiar: <Text style={{ color: t.textPrimary }}>{activeFamiliar.name}</Text>
+          </Text>
+        )}
+      </GradientCard>
+      <PressableScale
+        onPress={() => navigation.navigate('SummoningVoid')}
+        style={[styles.adminBtn, { backgroundColor: t.surfaceHi, borderColor: '#5a5aaa', marginTop: 10 }]}
+      >
+        <Ionicons name="sparkles-outline" size={18} color="#7a7acf" />
+        <Text style={[Tokens.font.h3, { color: '#7a7acf', marginLeft: 8 }]}>Summoning Void</Text>
+        <Ionicons name="chevron-forward" size={16} color={t.textTertiary} style={{ marginLeft: 'auto' }} />
+      </PressableScale>
+      <PressableScale
+        onPress={() => navigation.navigate('Armory')}
+        style={[styles.adminBtn, { backgroundColor: t.surfaceHi, borderColor: t.hairline, marginTop: 10 }]}
+      >
+        <Ionicons name="trophy-outline" size={18} color={t.accent} />
+        <Text style={[Tokens.font.h3, { color: t.accent, marginLeft: 8 }]}>The Armory</Text>
+        <Ionicons name="chevron-forward" size={16} color={t.textTertiary} style={{ marginLeft: 'auto' }} />
+      </PressableScale>
 
       <SectionHeader label="Danger Zone" title="Reset & Logout" />
       <PressableScale onPress={reset} style={[styles.dangerBtn, { borderColor: t.error }]}>
